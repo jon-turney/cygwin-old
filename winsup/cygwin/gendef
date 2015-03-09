@@ -128,6 +128,7 @@ EOF
 	if ($is64bit) {
 	  $res = <<EOF . longjmp () . $res;
 	.text
+	.cfi_sections .debug_frame
 
 	.seh_proc _sigfe_maybe
 _sigfe_maybe:					# stack is aligned on entry!
@@ -169,8 +170,19 @@ _sigfe:						# stack is aligned on entry!
 _sigbe:						# return here after cygwin syscall
 						# stack is aligned on entry!
 	.seh_endprologue
+	.cfi_startproc simple
+	# A rule for CFA is required by GDB, even if no unwinding uses it
+	.cfi_def_cfa rsp, 0
+	# Unwinding %rip gives the return address
+	.cfi_return_column 16
+	# DWARF expression which describes how to find the  _sigbe caller address on the signal stack
+	# DW_CFA_cfa_expression, IP, DW_OP_bregx (%gs.base:0), DW_OP_const2u, -$tls::stackptr, DW_OP_minus, DW_OP_deref
+	.cfi_escape 0x10, 16, 8, 0x92, 59, 0, 0x0a, -$tls::stackptr & 0xff, -$tls::stackptr >> 8, 0x1c, 0x06
+
 	movq	%gs:8,%r10			# address of bottom of tls
-1:	movl	\$1,%r11d			# potential lock value
+	.cfi_undefined %r10
+	1:	movl	\$1,%r11d			# potential lock value
+	.cfi_undefined %r11
 	xchgl	%r11d,$tls::stacklock(%r10)	# see if we can grab it
 	movl	%r11d,$tls::spinning(%r10)	# flag if we are waiting for lock
 	testl	%r11d,%r11d			# it will be zero
@@ -180,9 +192,11 @@ _sigbe:						# return here after cygwin syscall
 2:	movq	\$-8,%r11			# now decrement aux stack
 	xaddq	%r11,$tls::stackptr(%r10)	#  and get pointer
 	movq	-8(%r11),%r11			# get return address from signal stack
+	.cfi_register 16, %r11
 	decl	$tls::incyg(%r10)
 	decl	$tls::stacklock(%r10)		# release lock
 	jmp	*%r11				# "return" to caller
+	.cfi_endproc
 	.seh_endproc
 
 	.global	sigdelayed

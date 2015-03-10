@@ -25,9 +25,10 @@ MKDIRP:=$(INSTALL) -m 755 -d
 include $(srcdir)/../Makefile.common
 
 .PHONY: all install clean install-man install-man1 install-man3 \
-	newlibinfo2man install-newlibman utils2man install-newlibman
+	newlibinfo2man install-newlibman utils2man install-newlibman api2man
+	install-api2man
 
-all: newlibinfo2man utils2man
+all: newlibinfo2man utils2man api2man
 
 install: install-man install-newlibman install-utils2man
 
@@ -63,6 +64,12 @@ newlibinfo2man:
 
 utils2man:
 	${srcdir}/utils2man.pl ${top_srcdir}/winsup/doc/utils.xml
+
+api2man:
+	${srcdir}/api2man.pl \
+		${top_srcdir}/winsup/doc/path.xml \
+		${top_srcdir}/winsup/doc/logon-funcs.xml \
+		${top_srcdir}/winsup/doc/misc-funcs.xml
 
 install-newlibman:
 	$(INSTALL_DATA) *.3 "$(DESTDIR)$(man3dir)"

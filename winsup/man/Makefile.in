@@ -8,6 +8,7 @@
 # details.
 
 srcdir:=@srcdir@
+winsup_srcdir:=@winsup_srcdir@
 
 prefix:=@prefix@
 mandir:=@mandir@
@@ -21,13 +22,16 @@ INSTALL:=@INSTALL@
 INSTALL_DATA:=@INSTALL_DATA@
 MKDIRP:=$(INSTALL) -m 755 -d
 
-.PHONY: all install clean install-man install-man1 install-man3
+include $(srcdir)/../Makefile.common
 
-all:
+.PHONY: all install clean install-man install-man1 install-man3 \
+	newlibinfo2man install-newlibman
 
-install: install-man
+all: newlibinfo2man
 
-clean:
+install: install-man install-newlibman
+
+clean: clean-newlibman
 
 Makefile: $(srcdir)/Makefile.in
 	 /bin/sh ./config.status
@@ -51,3 +55,14 @@ install-man1: $(MAN1S)
 	  echo " $(INSTALL_DATA) '$$d$$p' '$(DESTDIR)$(man1dir)/$$f'"; \
 	  $(INSTALL_DATA) "$$d$$p" "$(DESTDIR)$(man1dir)/$$f"; \
 	done
+
+# note that newlib builds *.info in srcdir
+newlibinfo2man:
+	${srcdir}/newlibinfo2man.pl ${top_srcdir}/newlib/libc/libc.info
+	${srcdir}/newlibinfo2man.pl ${top_srcdir}/newlib/libm/libm.info
+
+install-newlibman:
+	$(INSTALL_DATA) *.3 "$(DESTDIR)$(man3dir)"
+
+clean-newlibman:
+	rm *.3

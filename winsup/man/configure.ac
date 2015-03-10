@@ -14,6 +14,10 @@ AC_INIT([Cygwin Manpages], 0,
 	cygwin@cygwin.com, cygwin, https://cygwin.com)
 AC_CONFIG_AUX_DIR(../..)
 
+. ${srcdir}/../configure.cygwin
+
+AC_SUBST(winsup_srcdir)
+
 AC_PROG_INSTALL
 AC_NO_EXECUTABLES
 AC_CANONICAL_SYSTEM

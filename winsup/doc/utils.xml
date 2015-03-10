@@ -833,7 +833,8 @@ bash$ locale noexpr
 
   </sect2>
 
-  <sect2 id="minidumper"><title>minidumper</title>
+  <sect2 id="minidumper">
+  <title>minidumper</title>
 
   <screen>
 Usage: minidumper [OPTION] FILENAME WIN32PID

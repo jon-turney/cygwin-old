@@ -1,0 +1,21 @@
+# -*- Makefile -*- for winsup/man
+# Copyright (c) 2015 Red Hat, Inc.
+#
+# This file is part of Cygwin.
+#
+# This software is a copyrighted work licensed under the terms of the
+# Cygwin license.  Please consult the file "CYGWIN_LICENSE" for
+# details.
+
+srcdir:=@srcdir@
+
+.PHONY: all install clean
+
+all:
+
+install:
+
+clean:
+
+Makefile: $(srcdir)/Makefile.in
+	 /bin/sh ./config.status

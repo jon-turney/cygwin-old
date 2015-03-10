@@ -9,13 +9,45 @@
 
 srcdir:=@srcdir@
 
-.PHONY: all install clean
+prefix:=@prefix@
+mandir:=@mandir@
+man1dir:=$(mandir)/man1
+man3dir:=$(mandir)/man3
+
+MAN1S:=$(srcdir)/cygwin.1 $(srcdir)/intro.1
+MAN3S:=$(srcdir)/intro.3
+
+INSTALL:=@INSTALL@
+INSTALL_DATA:=@INSTALL_DATA@
+MKDIRP:=$(INSTALL) -m 755 -d
+
+.PHONY: all install clean install-man install-man1 install-man3
 
 all:
 
-install:
+install: install-man
 
 clean:
 
 Makefile: $(srcdir)/Makefile.in
 	 /bin/sh ./config.status
+
+install-man: install-man1 install-man3
+
+install-man3: $(MAN3S)
+	test -z "$(man3dir)" || $(MKDIRP) "$(DESTDIR)$(man3dir)"
+	@list='$(MAN3S)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=`echo $$p | sed -e 's|^.*/||'`; \
+	  echo " $(INSTALL_DATA) '$$d$$p' '$(DESTDIR)$(man3dir)/$$f'"; \
+	  $(INSTALL_DATA) "$$d$$p" "$(DESTDIR)$(man3dir)/$$f"; \
+	done
+
+install-man1: $(MAN1S)
+	test -z "$(man1dir)" || $(MKDIRP) "$(DESTDIR)$(man1dir)"
+	@list='$(MAN1S)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=`echo $$p | sed -e 's|^.*/||'`; \
+	  echo " $(INSTALL_DATA) '$$d$$p' '$(DESTDIR)$(man1dir)/$$f'"; \
+	  $(INSTALL_DATA) "$$d$$p" "$(DESTDIR)$(man1dir)/$$f"; \
+	done

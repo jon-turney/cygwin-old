@@ -1,0 +1,132 @@
+.\"{{{}}}
+.\"{{{  Title
+.TH INTRO 1 "" "" "Cygwin"
+.\"}}}
+.\"{{{  Name
+.SH NAME
+.B intro
+\- Introduction to the Cygwin Environment
+.\"}}}
+.\"{{{  Description
+.SH DESCRIPTION
+.B Cygwin
+is a Linux-like environment for Windows. It consists of two parts:
+
+A DLL (\fBcygwin1.dll\fP) which acts as a Linux API emulation layer providing
+substantial Linux API functionality. The
+.BR intro (3)
+man page gives an introduction to this API.
+
+A collection of tools which provide Linux look and feel.
+This man page describes the user environment.
+.\"}}}
+
+.\"{{{  Availability
+.SH AVAILABILITY
+.B Cygwin
+is developed by volunteers collaborating over the Internet. It is
+distributed through the website \fB http://cygwin.com\fP, where you can find
+extensive documentation, including FAQ, User's Guide, and API Reference. The
+.B Cygwin
+website should
+be considered the authoritative source of information. The source code,
+released under the\fB GNU General Public License, Version 2\fP, is also
+available from the website or one of the mirrors.
+.\"}}}
+
+.\"{{{  Availability
+.SH COMPATIBILITY
+.B Cygwin
+uses the GNU versions of many of the standard UNIX command-line
+utilities (\fBsed\fP,\fB awk\fP, etc.), so the user environment is more similar
+to a Linux system than, for example, Sun Solaris.
+
+.P
+The default login shell and \fB /bin/sh\fP for
+.B Cygwin
+is\fB bash\fP, the GNU "Bourne-Again Shell", but other shells such
+as\fB tcsh\fP (an improved\fB csh\fP) are also available and can
+be installed using
+.B Cygwin's
+setup.
+
+.SH NOTES
+To port applications you will need to install the development
+tools, which you can do by selecting
+.B gcc
+in
+.B setup.exe
+(dependencies are automatically handled).
+If you need a specific program or library, you can search for a
+.B Cygwin
+package containing it at:
+
+.B http://cygwin.com/packages/
+
+.P
+If you are a UNIX veteran who plans to use
+.B Cygwin
+extensively, you will probably find it worth your while to learn to
+use\fB Cygwin\fP-specific tools that provide a UNIX\-like interface to
+common operations. For example,
+.B cygpath
+converts between UNIX and Win32-style pathnames. The full documentation
+for these utilities is at:
+
+.B http://cygwin.com/cygwin-ug-net/using-utils.html
+
+The optional
+.B cygutils
+package also contains utilities that help with common problems, such
+as\fB dos2unix\fP and\fB unix2dos\fP for the CRLF issue.
+.\"}}}
+
+.\"{{{  Documentation
+.SH DOCUMENTATION
+In addition to man pages and texinfo documentation, many
+.B Cygwin
+packages provide system-independent documentation in the
+.B /usr/share/doc/
+directory and\fB Cygwin\fP-specific documentation in
+.B /usr/share/doc/Cygwin/
+.P
+For example, if you have both
+.B less
+and
+.B cron
+installed, the command
+
+	less /usr/share/doc/Cygwin/cron.README
+
+would display the instructions to set up
+.B cron
+on your system.
+.\"}}}
+
+.\"{{{  Reporting Bugs
+.SH REPORTING BUGS
+If you find a bug in\fB Cygwin\fP, please read
+
+.B http://cygwin.com/bugs.html
+
+and follow the instructions for reporting found there.
+If you are able to track down the source of the bug and can provide a
+fix, there are instructions for contributing patches at:
+
+.B http://cygwin.com/contrib.html
+.\"}}}
+
+.\"{{{  Copyright
+.SH COPYRIGHT
+.B Cygwin
+is Copyright (C) 1995-2015 Red Hat, Inc.
+.PP
+\fBCygwin\fP is Free software; for complete licensing information, refer to:
+
+.B http://cygwin.com/licensing.html
+.\"}}}
+
+.\"{{{  See also
+.SH "SEE ALSO"
+.BR intro (3)
+.\"}}}

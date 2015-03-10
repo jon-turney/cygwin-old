@@ -1,0 +1,91 @@
+.\"{{{}}}
+.\"{{{  Title
+.TH INTRO 3 "" "" "Cygwin"
+.\"}}}
+.\"{{{  Name
+.SH NAME
+.B intro
+\- Introduction to the Cygwin API
+.\"}}}
+.\"{{{  Description
+.SH DESCRIPTION
+.B Cygwin
+is a Linux-like environment for Windows. It consists of two parts:
+
+A DLL (\fBcygwin1.dll\fP) which acts as a Linux API emulation layer providing
+substantial Linux API functionality.
+This page describes the API provided by the DLL.
+
+A collection of tools which provide Linux look and feel.
+This environment is described in the
+.BR intro (1)
+man page.
+.\"}}}
+
+.\"{{{  Availability
+.SH AVAILABILITY
+.B Cygwin
+is developed by volunteers collaborating over the Internet. It is
+distributed through the website
+\fBhttp://cygwin.com\fP. The website has extensive documentation,
+including FAQ, User's Guide, and API Reference. It should be considered the
+authoritative source of information. The source code, relased under the
+\fBGNU General Public License, Version 2\fP, is also availalbe from the
+website or one of the mirrors.
+.\"}}}
+
+.\"{{{  Availability
+.SH COMPATIBILITY
+.B Cygwin
+policy is to attempt to adhere to
+.B POSIX/SUSv2
+(Portable Operating System Interface for UNIX / The Single UNIX Specification,
+Version 2) where possible.
+
+\fBSUSv2\fP is available online at:
+
+.B http://www.opengroup.org/onlinepubs/007908799/
+
+For compatibility information about specific functions, see the API
+Reference at:
+
+.B http://cygwin.com/cygwin-api/cygwin-api.html
+
+Where these standards are ambiguous, Cygwin tries to mimic \fBLinux\fP.
+However, \fBCygwin\fP uses \fBnewlib\fP instead of \fBglibc\fP
+as its C Library, available at:
+
+.B http://sources.redhat.com/newlib/
+
+Keep in mind that there are many underlying differences between UNIX and
+Win32 (for example, a case-insensitive file system), making complete
+compatibility an ongoing challenge.
+.\"}}}
+
+.\"{{{  Reporting Bugs
+.SH REPORTING BUGS
+If you find a bug in\fB Cygwin\fP, please read
+
+.B http://cygwin.com/bugs.html
+
+and follow the instructions for reporting found there.
+If you are able to track down the source of the bug and can provide a
+fix, there are instructions for contributing patches at:
+
+.B http://cygwin.com/contrib.html
+.\"}}}
+
+.\"{{{  Copyright
+.SH COPYRIGHT
+.B Cygwin
+is Copyright (C) 1995-2015 Red Hat, Inc.
+.PP
+\fBCygwin\fP is Free software; for complete licensing information, refer to:
+
+.B http://cygwin.com/licensing.html
+.\"}}}
+
+.\"{{{  See also
+.SH "SEE ALSO"
+.BR intro (1)
+.\"}}}

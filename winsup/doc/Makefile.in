@@ -65,7 +65,7 @@ install-all: install-pdf install-html install-info
 install-pdf: cygwin-ug-net/cygwin-ug-net.pdf cygwin-api/cygwin-api.pdf
 	@$(MKDIRP) $(DESTDIR)$(docdir)
 	$(INSTALL_DATA) $^ $(DESTDIR)$(docdir)
-	
+
 install-html: cygwin-ug-net/cygwin-ug-net.html cygwin-api/cygwin-api.html
 	@$(MKDIRP) $(DESTDIR)$(htmldir)/cygwin-ug-net
 	$(INSTALL_DATA) cygwin-ug-net/*.html $(DESTDIR)$(htmldir)/cygwin-ug-net
@@ -101,9 +101,10 @@ faq/faq.html : $(FAQ_SOURCES)
 	-sed -i 's;<a name="id[mp][0-9]*"></a>;;g' faq/faq.html
 
 info:
-	for f in $(srcdir)/*.xml; do \
-		docbook2x-texi --info $$f ;\
-	done
+	cp /usr/share/docbook2X/charmaps/texi.charmap charmap
+	echo "ae (R)" >>charmap
+	docbook2x-texi -I --info --utf8trans-map=charmap $(srcdir)/cygwin-ug-net.xml
+	docbook2x-texi -I --info --utf8trans-map=charmap $(srcdir)/cygwin-api.xml
 
 Makefile.dep: cygwin-ug-net.xml cygwin-api.xml
 	cd $(srcdir) && ./xidepend $^ > "${CURDIR}/$@"

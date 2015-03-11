@@ -15,6 +15,7 @@ VPATH = @srcdir@
 datarootdir:=@datarootdir@
 docdir = @docdir@
 htmldir = @htmldir@
+infodir:=@infodir@
 
 override INSTALL:=@INSTALL@
 override INSTALL_DATA:=@INSTALL_DATA@
@@ -35,7 +36,8 @@ FAQ_SOURCES:= $(wildcard $(srcdir)/faq*.xml)
 .html.body:
 	$(srcdir)/bodysnatcher.pl $<
 
-.PHONY: all clean install install-all install-pdf install-html tarball
+.PHONY: all clean install install-all install-pdf install-html install-info \
+	info tarball
 
 all: Makefile Makefile.dep \
 	cygwin-ug-net/cygwin-ug-net.html \
@@ -43,7 +45,8 @@ all: Makefile Makefile.dep \
 	cygwin-api/cygwin-api.html \
 	faq/faq.body faq/faq.html \
 	cygwin-ug-net/cygwin-ug-net.pdf \
-	cygwin-api/cygwin-api.pdf
+	cygwin-api/cygwin-api.pdf \
+	info
 
 Makefile: $(srcdir)/Makefile.in
 	/bin/sh ./config.status
@@ -52,10 +55,11 @@ clean:
 	rm -f Makefile.dep
 	rm -f *.html *.html.gz
 	rm -Rf cygwin-api cygwin-ug cygwin-ug-net faq
+	rm -f *.info
 
 install: install-all
 
-install-all: install-pdf install-html
+install-all: install-pdf install-html install-info
 
 install-pdf: cygwin-ug-net/cygwin-ug-net.pdf cygwin-api/cygwin-api.pdf
 	@$(MKDIRP) $(DESTDIR)$(docdir)
@@ -68,6 +72,10 @@ install-html: cygwin-ug-net/cygwin-ug-net.html cygwin-api/cygwin-api.html
 	@$(MKDIRP) $(DESTDIR)$(htmldir)/cygwin-api
 	$(INSTALL_DATA) cygwin-api/*.html $(DESTDIR)$(htmldir)/cygwin-api
 	$(INSTALL_DATA) cygwin-api/cygwin-api.html $(DESTDIR)$(htmldir)/cygwin-api/index.html
+
+install-info:
+	$(MKDIRP) "$(DESTDIR)$(infodir)"
+	$(INSTALL_DATA) *.info "$(DESTDIR)$(infodir)"
 
 cygwin-ug-net/cygwin-ug-net-nochunks.html.gz : cygwin-ug-net.xml
 	-$(XMLTO) html-nochunks -m $(srcdir)/cygwin.xsl $<
@@ -90,6 +98,11 @@ cygwin-api/cygwin-api.pdf : cygwin-api.xml fo.xsl
 faq/faq.html : $(FAQ_SOURCES)
 	-$(XMLTO) html -o faq -m $(srcdir)/cygwin.xsl $(srcdir)/faq.xml
 	-sed -i 's;<a name="id[mp][0-9]*"></a>;;g' faq/faq.html
+
+info:
+	for f in $(srcdir)/*.xml; do \
+		docbook2x-texi --info $$f ;\
+	done
 
 TBFILES = cygwin-ug-net.dvi cygwin-ug-net.rtf cygwin-ug-net.ps \
 	  cygwin-ug-net.pdf cygwin-ug-net.xml \

@@ -351,6 +351,8 @@ stack_info::walk ()
 #endif
 }
 
+#define MAX_DUMPSTACK_FRAMES 32
+
 void
 cygwin_exception::dumpstack ()
 {
@@ -374,7 +376,7 @@ cygwin_exception::dumpstack ()
 #else
       small_printf ("Stack trace:\r\nFrame     Function  Args\r\n");
 #endif
-      for (i = 0; i < 16 && thestack++; i++)
+      for (i = 0; i < MAX_DUMPSTACK_FRAMES && thestack++; i++)
 	{
 	  small_printf (_AFMT "  " _AFMT, thestack.sf.AddrFrame.Offset,
 			thestack.sf.AddrPC.Offset);
@@ -384,7 +386,7 @@ cygwin_exception::dumpstack ()
 	  small_printf (")\r\n");
 	}
       small_printf ("End of stack trace%s\n",
-		    i == 16 ? " (more stack frames may be present)" : "");
+		    i == MAX_DUMPSTACK_FRAMES ? " (more stack frames may be present)" : "");
       if (h)
 	NtClose (h);
     }

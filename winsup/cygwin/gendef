@@ -166,6 +166,7 @@ _sigfe:						# stack is aligned on entry!
 	.seh_endproc
 
 	.global _sigbe
+        .def _sigbe; .scl 2; .type 32; .endef
 	.seh_proc _sigbe
 _sigbe:						# return here after cygwin syscall
 						# stack is aligned on entry!
@@ -200,6 +201,7 @@ _sigbe:						# return here after cygwin syscall
 	.seh_endproc
 
 	.global	sigdelayed
+        .def sigdelayed; .scl 2; .type 32; .endef
 	.seh_proc sigdelayed
 sigdelayed:
 	pushq	%r10				# used for return address injection

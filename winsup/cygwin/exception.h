@@ -162,12 +162,15 @@ public:
 
 #endif /* !__x86_64__ */
 
+typedef void (*PFNCYGWINCRASHREPORTERREPORT)(EXCEPTION_POINTERS *ep);
+
 class cygwin_exception
 {
   PUINT_PTR framep;
   PCONTEXT ctx;
   EXCEPTION_RECORD *e;
   HANDLE h;
+  static PFNCYGWINCRASHREPORTERREPORT report;
   void dump_exception ();
   void open_stackdumpfile ();
 public:
@@ -176,4 +179,7 @@ public:
   void dumpstack ();
   PCONTEXT context () const {return ctx;}
   EXCEPTION_RECORD *exception_record () const {return e;}
+  static void crashreport (cygwin_exception *si_cyg);
+  static void set_crashreport_hook (PFNCYGWINCRASHREPORTERREPORT hook)
+    { report = hook; }
 };

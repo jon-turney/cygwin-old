@@ -392,6 +392,25 @@ cygwin_exception::dumpstack ()
   __endtry
 }
 
+PFNCYGWINCRASHREPORTERREPORT cygwin_exception::report = 0;
+
+void
+cygwin_exception::crashreport (cygwin_exception *si_cyg)
+{
+  if (report)
+    {
+      if (si_cyg)
+        {
+          EXCEPTION_POINTERS ep;
+          ep.ExceptionRecord = si_cyg->e;
+          ep.ContextRecord = si_cyg->ctx;
+          (*report) (&ep);
+        }
+      else
+        (*report) (NULL);
+    }
+}
+
 bool
 _cygtls::inside_kernel (CONTEXT *cx)
 {
@@ -1221,7 +1240,6 @@ signal_exit (int sig, siginfo_t *si)
   debug_printf ("exiting due to signal %d", sig);
   exit_state = ES_SIGNAL_EXIT;
 
-  if (cygheap->rlim_core > 0UL)
     switch (sig)
       {
       case SIGABRT:
@@ -1237,6 +1255,8 @@ signal_exit (int sig, siginfo_t *si)
 	sig |= 0x80;		/* Flag that we've "dumped core" */
 	if (try_to_debug ())
 	  break;
+	cygwin_exception::crashreport((cygwin_exception *)si->si_cyg);
+	if (cygheap->rlim_core > 0UL) {
 	if (si->si_code != SI_USER && si->si_cyg)
 	  ((cygwin_exception *) si->si_cyg)->dumpstack ();
 	else
@@ -1252,6 +1272,7 @@ signal_exit (int sig, siginfo_t *si)
 #endif
 	    exc.dumpstack ();
 	  }
+	}
 	break;
       }
 

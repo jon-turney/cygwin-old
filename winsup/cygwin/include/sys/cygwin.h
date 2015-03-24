@@ -156,6 +156,7 @@ typedef enum
     CW_GETNSS_PWD_SRC,
     CW_GETNSS_GRP_SRC,
     CW_EXCEPTION_RECORD_FROM_SIGINFO_T,
+    CW_SET_CRASHREPORT_HOOK,
   } cygwin_getinfo_types;
 
 #define CW_LOCK_PINFO CW_LOCK_PINFO

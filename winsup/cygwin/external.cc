@@ -702,6 +702,14 @@ cygwin_internal (cygwin_getinfo_types t, ...)
 	}
 	break;
 
+      case CW_SET_CRASHREPORT_HOOK:
+	{
+	  PFNCYGWINCRASHREPORTERREPORT hook = va_arg(arg, PFNCYGWINCRASHREPORTERREPORT);
+	  cygwin_exception::set_crashreport_hook(hook);
+	  res = 0;
+        }
+        break;
+
       default:
 	set_errno (ENOSYS);
     }

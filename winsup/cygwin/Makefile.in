@@ -160,6 +160,7 @@ DLL_OFILES:= \
 	autoload.o \
 	base64.o \
 	bsdlib.o \
+	context.o \
 	ctype.o \
 	cxx.o \
 	cygheap.o \

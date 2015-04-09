@@ -23,4 +23,17 @@ typedef __attribute__ ((aligned (16))) struct __ucontext {
 	unsigned long int	uc_flags;
 } ucontext_t;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int getcontext(ucontext_t *ucp);
+int setcontext(const ucontext_t *ucp);
+void makecontext(ucontext_t *ucp, void (*func)(), int argc, ...);
+int swapcontext(ucontext_t *oucp, const ucontext_t *ucp);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* !_SYS_UCONTEXT_H_ */

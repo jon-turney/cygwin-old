@@ -1,0 +1,8 @@
+#!/bin/sh
+builddir=/wip/cygwin/build/x86_64-unknown-cygwin/newlib
+find -name *.c -exec grep -q "^FUNCTION" {} \; -print | \
+    while read c ; do
+        if [ ! -e ${builddir}/${c%.c}.def ] ; then
+            echo $c
+        fi
+    done

@@ -1,0 +1,7 @@
+#!/bin/sh
+nm --defined-only -g libc.a | grep " T " |  cut -d' ' -f3 | egrep -v "(__|_r|xdr)" | sort | \
+    while read c ; do
+	if [ ! -e libc/${c}.3 ] ; then
+	    echo $c
+	fi
+    done

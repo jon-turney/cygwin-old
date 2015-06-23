@@ -1,0 +1,5 @@
+#!/bin/sh -x
+builddir=/wip/cygwin/build/x86_64-unknown-cygwin/newlib/libm
+find -name \*.tex -exec fgrep @include {} \; | awk '{print $2}' | sort >included.file.list
+find ${builddir} -name \*.def | sed s#${builddir}/## | sort >chewed.file.list
+diff -U0 included.file.list chewed.file.list

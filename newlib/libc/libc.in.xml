@@ -31,7 +31,385 @@
   <xi:include href="posix.xml">
       <xi:fallback/>
   </xi:include>
-  <!-- XXX: stdarg.h and vararg.h are directly described in libc.texinfo -->
+
+  <!-- stdarg.h and vararg.h are directly described in libc.texinfo, so provide equivalent refentries -->
+  <chapter id="arglists">
+    <title>Variable Argument Lists</title>
+    <para>
+      The <code>printf</code> family of functions is defined to accept a
+      variable number of arguments, rather than a fixed argument list.  You can
+      define your own functions with a variable argument list, by using macro
+      definitions from either <filename>stdarg.h</filename> (for compatibility
+      with ANSI C) or from <filename>varargs.h</filename> (for compatibility
+      with a popular convention prior to ANSI C).
+    </para>
+
+    <section>
+      <title>ANSI-standard macros (<filename>stdarg.h</filename>)</title>
+      <para>
+	In ANSI C, a function has a variable number of arguments when its
+	parameter list ends in an ellipsis (<code>...</code>).  The parameter
+	list must also include at least one explicitly named argument; that
+	argument is used to initialize the variable list data structure.
+      </para>
+      <para>
+	ANSI C defines three macros (<code>va_start</code>, <code>va_arg</code>,
+	and <code>va_end</code>) to operate on variable argument lists.
+	<filename>stdarg.h</filename> also defines a special type to represent
+	variable argument lists: this type is called <code>va_list</code>.
+      </para>
+
+      <refentry id="va_start">
+	<refmeta>
+	  <refentrytitle>va_start</refentrytitle>
+	  <manvolnum>3</manvolnum>
+	</refmeta>
+	<refnamediv>
+	  <refname>va_start</refname>
+	  <refpurpose>Initialize variable argument list</refpurpose>
+	</refnamediv>
+	<refsynopsisdiv>
+	  <funcsynopsis>
+	    <funcsynopsisinfo>#include &lt;stdarg.h&gt;
+	    </funcsynopsisinfo>
+	    <funcprototype>
+	      <funcdef>void <function>va_start</function></funcdef>
+	      <paramdef>va_list <parameter>ap</parameter></paramdef>
+	      <paramdef><parameter>rightmost</parameter></paramdef>
+	    </funcprototype>
+	  </funcsynopsis>
+	</refsynopsisdiv>
+	<refsect1>
+	  <title>Description</title>
+	  <para>
+	    Use <code>va_start</code> to initialize the variable argument list
+	    <varname>ap</varname>, so that <code>va_arg</code> can extract
+	    values from it.  <varname>rightmost</varname> is the name of the
+	    last explicit argument in the parameter list (the argument
+	    immediately preceding the ellipsis <literal>...</literal> that flags
+	    variable arguments in an ANSI C function header).  You can only use
+	    <code>va_start</code> in a function declared using this ellipsis notation
+	    (not, for example, in one of its subfunctions).
+	  </para>
+	</refsect1>
+	<refsect1>
+	  <title>Returns</title>
+	  <para>
+	    <code>va_start</code> does not return a result.
+	  </para>
+	</refsect1>
+	<refsect1>
+	  <title>Portability</title>
+	  <para>
+	    ANSI C requires <code>va_start</code>.
+	  </para>
+	</refsect1>
+      </refentry>
+
+      <refentry id="va_arg">
+	<refmeta>
+	  <refentrytitle>va_arg</refentrytitle>
+	  <manvolnum>3</manvolnum>
+	</refmeta>
+	<refnamediv>
+	  <refname>va_arg</refname>
+	  <refpurpose>Extract a value from argument list</refpurpose>
+	</refnamediv>
+	<refsynopsisdiv>
+	  <funcsynopsis>
+	    <funcsynopsisinfo>#include &lt;stdarg.h&gt;
+	    </funcsynopsisinfo>
+	    <funcprototype>
+	      <funcdef>type <function>va_args</function></funcdef>
+	      <paramdef>va_list <parameter>ap</parameter></paramdef>
+	      <paramdef><parameter>type</parameter></paramdef>
+	    </funcprototype>
+	  </funcsynopsis>
+	</refsynopsisdiv>
+	<refsect1>
+	  <title>Description</title>
+	  <para>
+	    <code>va_arg</code> returns the next unprocessed value from a
+	    variable argument list <varname>ap</varname> (which you must
+	    previously create with <code>va_start</code>).  Specify the type for
+	    the value as the second parameter to the macro, <varname>type</varname>.
+	  </para>
+	  <para>
+	    You may pass a <code>va_list</code> object <varname>ap</varname> to
+	    a subfunction, and use <code>va_arg</code> from the subfunction
+	    rather than from the function actually declared with an ellipsis in
+	    the header; however, in that case you may <emphasis>only</emphasis>
+	    use <code>va_arg</code> from the subfunction.  ANSI C does not
+	    permit extracting successive values from a single variable-argument
+	    list from different levels of the calling stack.
+	  </para>
+	  <para>
+	    There is no mechanism for testing whether there is actually a next
+	    argument available; you might instead pass an argument count (or
+	    some other data that implies an argument count) as one of the fixed
+	    arguments in your function call.
+	  </para>
+	</refsect1>
+	<refsect1>
+	  <title>Returns</title>
+	  <para>
+	    <code>va_arg</code> returns the next argument, an object of type
+	    <varname>type</varname>.
+	  </para>
+	</refsect1>
+	<refsect1>
+	  <title>Portability</title>
+	  <para>
+	    ANSI C requires <code>va_arg</code>.
+	  </para>
+	</refsect1>
+      </refentry>
+
+      <refentry id="va_end">
+	<refmeta>
+	  <refentrytitle>va_end</refentrytitle>
+	  <manvolnum>3</manvolnum>
+	</refmeta>
+	<refnamediv>
+	  <refname>va_end</refname>
+	  <refpurpose>Abandon a variable argument list</refpurpose>
+	</refnamediv>
+	<refsynopsisdiv>
+	  <funcsynopsis>
+	    <funcsynopsisinfo>#include &lt;stdarg.h&gt;
+	    </funcsynopsisinfo>
+	    <funcprototype>
+	      <funcdef>void <function>va_end</function></funcdef>
+	      <paramdef>va_list <parameter>ap</parameter></paramdef>
+	    </funcprototype>
+	  </funcsynopsis>
+	</refsynopsisdiv>
+	<refsect1>
+	  <title>Description</title>
+	  <para>
+	    Use <code>va_end</code> to declare that your program will not use the variable
+	    argument list <varname>ap</varname> any further.
+	  </para>
+	</refsect1>
+	<refsect1>
+	  <title>Returns</title>
+	  <para>
+	    <code>va_end</code> does not return a result.
+	  </para>
+	</refsect1>
+	<refsect1>
+	  <title>Portability</title>
+	  <para>
+	    ANSI C requires <code>va_end</code>.
+	  </para>
+	</refsect1>
+      </refentry>
+    </section>
+
+    <section>
+      <title>Traditional macros (<filename>varargs.h</filename>)</title>
+      <para>
+	If your C compiler predates ANSI C, you may still be able to use
+	variable argument lists using the macros from the
+	<filename>varargs.h</filename> header file.  These macros resemble their
+	ANSI counterparts, but have important differences in usage.  In
+	particular, since traditional C has no declaration mechanism for
+	variable argument lists, two additional macros are provided simply for
+	the purpose of defining functions with variable argument lists.
+      </para>
+      <para>
+	As with <filename>stdarg.h</filename> , the type <code>va_list</code> is
+	used to hold a data structure representing a variable argument list.
+      </para>
+
+      <refentry id="va_alist">
+	<refmeta>
+	  <refentrytitle>va_alist</refentrytitle>
+	  <manvolnum>3</manvolnum>
+	</refmeta>
+	<refnamediv>
+	  <refname>va_alist</refname>
+	  <refname>va_dcl</refname>
+	  <refpurpose>Declare variable arguments</refpurpose>
+	</refnamediv>
+	<refsynopsisdiv>
+	  <funcsynopsis>
+	    <funcsynopsisinfo>#include &lt;varargs.h&gt;
+	    </funcsynopsisinfo>
+	    <funcprototype>
+	      <funcdef><function>function</function></funcdef>
+	      <paramdef><parameter>va_alist</parameter></paramdef>
+	    </funcprototype>
+	    <funcsynopsisinfo>va_dcl
+	    </funcsynopsisinfo>
+	  </funcsynopsis>
+	</refsynopsisdiv>
+	<refsect1>
+	  <title>Description</title>
+	  <para>
+	    To use the <filename>varargs.h</filename> version of variable
+	    argument lists, you must declare your function with a call to the
+	    macro <code>va_alist</code> as its argument list, and use
+	    <code>va_dcl</code> as the declaration.  <emphasis>Do not use a
+	    semicolon after <code>va_dcl</code>.</emphasis>
+	  </para>
+	</refsect1>
+	<refsect1>
+	  <title>Returns</title>
+	  <para>
+	    These macros cannot be used in a context where a return is
+	    syntactically possible.
+	  </para>
+	</refsect1>
+	<refsect1>
+	  <title>Portability</title>
+	  <para>
+	    <code>va_alist</code> and <code>va_dcl</code> were the most
+	    widespread method of declaring variable argument lists prior to ANSI
+	    C.
+	  </para>
+	</refsect1>
+      </refentry>
+
+      <refentry id="va_start_trad">
+	<refmeta>
+	  <refentrytitle>va_start</refentrytitle>
+	  <manvolnum>3</manvolnum>
+	</refmeta>
+	<refnamediv>
+	  <refdescriptor>va_start (traditional)</refdescriptor>
+	  <refname>va_start_trad</refname>
+	  <refpurpose>Initialize variable argument list</refpurpose>
+	</refnamediv>
+	<refsynopsisdiv>
+	  <funcsynopsis>
+	    <funcsynopsisinfo>#include &lt;varargs.h&gt;
+	    </funcsynopsisinfo>
+	    <funcprototype>
+	      <funcdef><function>va_start</function></funcdef>
+	      <paramdef>va_list <parameter>ap</parameter></paramdef>
+	    </funcprototype>
+	  </funcsynopsis>
+	</refsynopsisdiv>
+	<refsect1>
+	  <title>Description</title>
+	  <para>
+	    With the <filename>varargs.h</filename> macros, use
+	    <code>va_start</code> to initialize a data structure
+	    <varname>ap</varname> to permit manipulating a variable argument
+	    list.  <varname>ap</varname> must have the type
+	    <varname>va_list</varname>.
+	  </para>
+	</refsect1>
+	<refsect1>
+	  <title>Returns</title>
+	  <para>
+	    <code>va_start</code> does not return a result.
+	  </para>
+	</refsect1>
+	<refsect1>
+	  <title>Portability</title>
+	  <para>
+	    <code>va_start</code> is also defined as a macro in ANSI C, but the
+	    definitions are incompatible; the ANSI version has another parameter
+	    besides <varname>ap</varname>.
+	  </para>
+	</refsect1>
+      </refentry>
+
+      <refentry id="va_arg_trad">
+	<refmeta>
+	  <refentrytitle>va_arg</refentrytitle>
+	  <manvolnum>3</manvolnum>
+	</refmeta>
+	<refnamediv>
+	  <refdescriptor>va_arg (traditional)</refdescriptor>
+	  <refname>va_arg_trad</refname>
+	  <refpurpose>Extract a value from argument list</refpurpose>
+	</refnamediv>
+	<refsynopsisdiv>
+	  <funcsynopsis>
+	    <funcsynopsisinfo>#include &lt;varargs.h&gt;
+	    </funcsynopsisinfo>
+	    <funcprototype>
+	      <funcdef>type <function>va_arg</function></funcdef>
+	      <paramdef>va_list <parameter>ap</parameter></paramdef>
+	      <paramdef><parameter>type</parameter></paramdef>
+	    </funcprototype>
+	  </funcsynopsis>
+	</refsynopsisdiv>
+	<refsect1>
+	  <title>Description</title>
+	  <para>
+	    <code>va_arg</code> returns the next unprocessed value from a
+	    variable argument list <varname>ap</varname> (which you must
+	    previously create with <code>va_start</code>).  Specify the type for
+	    the value as the second parameter to the macro,
+	    <varname>type</varname>.
+	  </para>
+	</refsect1>
+	<refsect1>
+	  <title>Returns</title>
+	  <para>
+	    <code>va_arg</code> returns the next argument, an object of type
+	    <varname>type</varname>.
+	  </para>
+	</refsect1>
+	<refsect1>
+	  <title>Portability</title>
+	  <para>
+	    The <code>va_arg</code> defined in <filename>varargs.h</filename>
+	    has the same syntax and usage as the ANSI C version from
+	    <filename>stdarg.h</filename>.
+	  </para>
+	</refsect1>
+      </refentry>
+
+      <refentry id="va_end_trad">
+	<refmeta>
+	  <refentrytitle>va_end</refentrytitle>
+	  <manvolnum>3</manvolnum>
+	</refmeta>
+	<refnamediv>
+	  <refdescriptor>va_end (traditional)</refdescriptor>
+	  <refname>va_end_trad</refname>
+	  <refpurpose>Abandon a variable argument list</refpurpose>
+	</refnamediv>
+	<refsynopsisdiv>
+	  <funcsynopsis>
+	    <funcsynopsisinfo>#include &lt;varargs.h&gt;
+	    </funcsynopsisinfo>
+	    <funcprototype>
+	      <funcdef><function>va_end</function></funcdef>
+	      <paramdef>va_list <parameter>ap</parameter></paramdef>
+	    </funcprototype>
+	  </funcsynopsis>
+	</refsynopsisdiv>
+	<refsect1>
+	  <title>Description</title>
+	  <para>
+	    Use <code>va_end</code> to declare that your program will not use
+	    the variable argument list <varname>ap</varname> any further.
+	  </para>
+	</refsect1>
+	<refsect1>
+	  <title>Returns</title>
+	  <para>
+	    <code>va_end</code> does not return a result.
+	  </para>
+	</refsect1>
+	<refsect1>
+	  <title>Portability</title>
+	  <para>
+	    The <code>va_end</code> defined in <filename>varargs.h</filename>
+	    has the same syntax and usage as the ANSI C version from
+	    <filename>stdarg.h</filename>.
+	  </para>
+	</refsect1>
+      </refentry>
+
+    </section>
+  </chapter>
 
   <!-- iconv is optional -->
   <xi:include href="iconv.xml">

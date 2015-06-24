@@ -371,7 +371,7 @@ va_start(@var{ap});
 @strong{Description}@*
 With the @file{varargs.h} macros, use @code{va_start} to initialize a
 data structure @var{ap} to permit manipulating a variable argument list.
-@var{ap} must have the type @var{va_alist}.
+@var{ap} must have the type @var{va_list}.
 
 @strong{Returns}@*
 @code{va_start} does not return a result.

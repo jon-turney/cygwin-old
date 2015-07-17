@@ -1838,7 +1838,8 @@ void
 _cygtls::signal_debugger (siginfo_t& si)
 {
   HANDLE th;
-  /* If si.si_cyg is set then the signal was already sent to the debugger. */
+  /* If si.si_cyg is set then the signal was caused by an exception, which has
+     already been sent to the debugger. */
   if (isinitialized () && !si.si_cyg && (th = (HANDLE) *this)
       && being_debugged () && SuspendThread (th) >= 0)
     {
@@ -1846,19 +1847,14 @@ _cygtls::signal_debugger (siginfo_t& si)
       c.ContextFlags = CONTEXT_FULL;
       if (GetThreadContext (th, &c))
 	{
-	  if (incyg)
-#ifdef __x86_64__
-	    c.Rip = retaddr ();
-#else
-	    c.Eip = retaddr ();
-#endif
-	  memcpy (&context.uc_mcontext, &c, sizeof (CONTEXT));
 	  /* Enough space for 32/64 bit addresses */
 	  char sigmsg[2 * sizeof (_CYGWIN_SIGNAL_STRING
 				  " ffffffff ffffffffffffffff")];
 	  __small_sprintf (sigmsg, _CYGWIN_SIGNAL_STRING " %d %y %p",
-			   si.si_signo, thread_id, &context.uc_mcontext);
+			   si.si_signo, thread_id, &c);
 	  OutputDebugString (sigmsg);
+	  /* It's safe to let the CONTEXT c fall out of scope now, as
+	     OutputDebugString is synchronous */
 	}
       ResumeThread (th);
     }

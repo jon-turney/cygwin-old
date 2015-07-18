@@ -54,4 +54,5 @@ include $(srcdir)/../../Makefile.shared
 
 CHEWOUT_FILES =
 CHAPTERS =
-# No doc for syscalls.
+# No generated doc for syscalls.
+DOCBOOK_STATIC_CHAPTERS = syscalls.xml

@@ -38,6 +38,10 @@ doc-docbook: $(DOCBOOK_OUT_FILES)
 	do \
 	  ${top_srcdir}/../doc/chapter-texi2docbook.py <$(srcdir)/$${chapter%.xml}.tex >../$$chapter ; \
 	done
+	for chapter in $(DOCBOOK_STATIC_CHAPTERS) ; \
+	do \
+	  cp ${srcdir}/$${chapter} ../ ; \
+	done
 
 doc: doc-docbook doc-texinfo
 

@@ -132,6 +132,7 @@
   <xi:include href="posix.xml">
       <xi:fallback/>
   </xi:include>
+  <xi:include href="syscalls.xml"/>
 
   <!-- stdarg.h and vararg.h are directly described in libc.texinfo, so provide equivalent refentries -->
   <chapter id="arglists">

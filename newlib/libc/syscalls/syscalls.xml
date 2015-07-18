@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="syscalls" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <title>System Calls</title>
+  <para>
+    <indexterm><primary>linking the C library</primary></indexterm>
+    The C subroutine library depends on a handful of subroutine calls for
+    operating system services.  If you use the C library on a system that
+    complies with the POSIX.1 standard (also known as IEEE 1003.1), most of
+    these subroutines are supplied with your operating system.
+  </para>
+  <para>
+    If some of these subroutines are not provided with your system&#x2014;in the
+    extreme case, if you are developing software for a <quote>bare board</quote>
+    system, without an OS&#x2014;you will at least need to provide do-nothing
+    stubs (or subroutines with minimal functionality) to allow your programs to
+    link with the subroutines in <code>libc.a</code>.
+  </para>
+
+  <section id="Stubs">
+    <title>Definitions for OS interface</title>
+    <indexterm><primary>Stubs</primary></indexterm>
+    <indexterm><primary>subroutines for OS interface</primary></indexterm>
+    <indexterm><primary>OS interface subroutines</primary></indexterm>
+    <para>
+      This is the complete set of system definitions (primarily subroutines)
+      required; the examples shown implement the minimal functionality required
+      to allow <code>libc</code> to link, and fail gracefully where OS services
+      are not available.
+    </para>
+    <para>
+      Graceful failure is permitted by returning an error code.  A minor
+      complication arises here: the C library must be compatible with
+      development environments that supply fully functional versions of these
+      subroutines.  Such environments usually return error codes in a global
+      <code>errno</code>.  However, the Red Hat newlib C library provides a
+      <emphasis>macro</emphasis> definition for <code>errno</code> in the header
+      file <filename>errno.h</filename>, as part of its support for reentrant
+      routines (see <xref linkend='reentrancy'/>).
+    </para>
+    <para>
+      <indexterm><primary><code>errno</code> global vs
+      macro</primary></indexterm> The bridge between these two interpretations
+      of <code>errno</code> is straightforward: the C library routines with OS
+      interface calls capture the <code>errno</code> values returned globally,
+      and record them in the appropriate field of the reentrancy structure (so
+      that you can query them using the <code>errno</code> macro from
+      <filename>errno.h</filename>).
+    </para>
+    <para>
+      This mechanism becomes visible when you write stub routines for OS
+      interfaces. You must include <code>errno.h</code>, then disable the macro,
+      like this:
+      <programlisting>
+#include &lt;errno.h&gt;
+#undef errno
+extern int errno;
+      </programlisting>
+    </para>
+    <para>
+      The examples in this chapter include this treatment of <code>errno</code>.
+    </para>
+    <informaltable><tgroup cols='2'><tbody valign='top'>
+      <row>
+	<entry><code>_exit</code></entry>
+	<entry>
+	  <para>
+	    Exit a program without cleaning up files.  If your system doesn't
+	    provide this, it is best to avoid linking with subroutines that
+	    require it (<code>exit</code>, <code>system</code>).
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>close</code></entry>
+	<entry>
+	  <para>
+	    Close a file.  Minimal implementation:
+	    <programlisting>
+int close(int file) {
+  return -1;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>environ</code></entry>
+	<entry>
+	  <para>
+	    A pointer to a list of environment variables and their values.  For
+	    a minimal environment, this empty list is adequate:
+	    <programlisting>
+char *__env[1] = { 0 };
+char **environ = __env;
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>execve</code></entry>
+	<entry>
+	  <para>
+	    Transfer control to a new process.  Minimal implementation (for a
+	    system without processes):
+	    <programlisting>
+#include &lt;errno.h&gt;
+#undef errno
+extern int errno;
+int execve(char *name, char **argv, char **env) {
+  errno = ENOMEM;
+  return -1;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>fork</code></entry>
+	<entry>
+	  <para>
+	    Create a new process.  Minimal implementation (for a system without
+	    processes):
+	    <programlisting>
+#include &lt;errno.h&gt;
+#undef errno
+extern int errno;
+int fork(void) {
+  errno = EAGAIN;
+  return -1;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>fstat</code></entry>
+	<entry>
+	  <para>
+	    Status of an open file.  For consistency with other minimal
+	    implementations in these examples, all files are regarded as
+	    character special devices.  The <filename>sys/stat.h</filename>
+	    header file required is distributed in the
+	    <filename>include</filename> subdirectory for this C library.
+	    <programlisting>
+#include &lt;sys/stat.h&gt;
+int fstat(int file, struct stat *st) {
+  st->st_mode = S_IFCHR;
+  return 0;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>getpid</code></entry>
+	<entry>
+	  <para>
+	    Process-ID; this is sometimes used to generate strings unlikely to
+	    conflict with other processes.  Minimal implementation, for a system
+	    without processes:
+	    <programlisting>
+int getpid(void) {
+  return 1;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>isatty</code></entry>
+	<entry>
+	  <para>
+	    Query whether output stream is a terminal.  For consistency with the
+	    other minimal implementations, which only support output to
+	    <code>stdout</code>, this minimal implementation is suggested:
+	    <programlisting>
+int isatty(int file) {
+  return 1;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>kill</code></entry>
+	<entry>
+	  <para>
+	    Send a signal.  Minimal implementation:
+	    <programlisting>
+#include &lt;errno.h&gt;
+#undef errno
+extern int errno;
+int kill(int pid, int sig) {
+  errno = EINVAL;
+  return -1;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>link</code></entry>
+	<entry>
+	  <para>
+	    Establish a new name for an existing file.  Minimal implementation:
+	    <programlisting>
+#include &lt;errno.h&gt;
+#undef errno
+extern int errno;
+int link(char *old, char *new) {
+  errno = EMLINK;
+  return -1;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>lseek</code></entry>
+	<entry>
+	  <para>
+	    Set position in a file.  Minimal implementation:
+	    <programlisting>
+int lseek(int file, int ptr, int dir) {
+  return 0;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>open</code></entry>
+	<entry>
+	  <para>
+	    Open a file.  Minimal implementation:
+	    <programlisting>
+int open(const char *name, int flags, int mode) {
+  return -1;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>read</code></entry>
+	<entry>
+	  <para>
+	    Read from a file.  Minimal implementation:
+	    <programlisting>
+int read(int file, char *ptr, int len) {
+  return 0;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>sbrk</code></entry>
+	<entry>
+	  <para>
+	    Increase program data space.  As <code>malloc</code> and related
+	    functions depend on this, it is useful to have a working
+	    implementation.  The following suffices for a standalone system; it
+	    exploits the symbol <code>_end</code> automatically defined by the
+	    GNU linker.
+	    <programlisting>
+caddr_t sbrk(int incr) {
+  extern char _end; /* <lineannotation>Defined by the linker</lineannotation> */
+  static char *heap_end;
+  char *prev_heap_end;
+
+  if (heap_end == 0) {
+    heap_end = &amp;_end;
+  }
+  prev_heap_end = heap_end;
+  if (heap_end + incr > stack_ptr) {
+    write (1, "Heap and stack collision\n", 25);
+    abort ();
+  }
+
+  heap_end += incr;
+  return (caddr_t) prev_heap_end;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>stat</code></entry>
+	<entry>
+	  <para>
+	    Status of a file (by name).  Minimal implementation:
+	    <programlisting>
+int stat(char *file, struct stat *st) {
+  st->st_mode = S_IFCHR;
+  return 0;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>times</code></entry>
+	<entry>
+	  <para>
+	    Timing information for current process.  Minimal implementation:
+	    <programlisting>
+int times(struct tms *buf) {
+  return -1;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>unlink</code></entry>
+	<entry>
+	  <para>
+	    Remove a file's directory entry.  Minimal implementation:
+	    <programlisting>
+#include &lt;errno.h&gt;
+#undef errno
+extern int errno;
+int unlink(char *name) {
+  errno = ENOENT;
+  return -1;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>wait</code></entry>
+	<entry>
+	  <para>
+	    Wait for a child process.  Minimal implementation:
+	    <programlisting>
+#include &lt;errno.h&gt;
+#undef errno
+extern int errno;
+int wait(int *status) {
+  errno = ECHILD;
+  return -1;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+      <row>
+	<entry><code>write</code></entry>
+	<entry>
+	  <para>
+	    Write to a file.  <filename>libc</filename> subroutines will use
+	    this system routine for output to all files, <emphasis>including
+	    </emphasis> <code>stdout</code>&#x2014;so if you need to generate
+	    any output, for example to a serial port for debugging, you should
+	    make your minimal <code>write</code> capable of doing this.  The
+	    following minimal implementation is an incomplete example; it relies
+	    on a <code>outbyte</code> subroutine (not shown; typically, you must
+	    write this in assembler from examples provided by your hardware
+	    manufacturer) to actually perform the output.
+	    <programlisting>
+int write(int file, char *ptr, int len) {
+  int todo;
+
+  for (todo = 0; todo &lt; len; todo++) {
+    outbyte (*ptr++);
+  }
+  return len;
+}
+	    </programlisting>
+	  </para>
+	</entry>
+      </row>
+    </tbody></tgroup></informaltable>
+  </section>
+
+  <section>
+    <title>Reentrant covers for OS subroutines</title>
+    <para>
+      Since the system subroutines are used by other library routines that
+      require reentrancy, <filename>libc.a</filename> provides cover routines
+      (for example, the reentrant version of <code>fork</code> is
+      <code>_fork_r</code>).  These cover routines are consistent with the other
+      reentrant subroutines in this library, and achieve reentrancy by using a
+      reserved global data block (see <xref linkend='reentrancy'/>).
+    </para>
+
+    <xi:include href="./reent/closer.xml"/>
+    <xi:include href="./reent/execr.xml"/>
+    <xi:include href="./reent/fstatr.xml"/>
+    <xi:include href="./reent/linkr.xml"/>
+    <xi:include href="./reent/lseekr.xml"/>
+    <xi:include href="./reent/openr.xml"/>
+    <xi:include href="./reent/readr.xml"/>
+    <xi:include href="./reent/sbrkr.xml"/>
+    <xi:include href="./reent/signalr.xml"/>
+    <xi:include href="./reent/statr.xml"/>
+    <xi:include href="./reent/timesr.xml"/>
+    <xi:include href="./reent/unlinkr.xml"/>
+    <xi:include href="./reent/writer.xml"/>
+
+  </section>
+</chapter>

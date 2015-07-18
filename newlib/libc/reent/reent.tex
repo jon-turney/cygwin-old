@@ -15,8 +15,8 @@ reentrant fashion.
 @findex reent.h
 @cindex reentrancy structure
 These hooks use the structure @code{_reent} defined in @file{reent.h}.
-A variable defined as @samp{struct _reent} is called a @dfn{reentrancy
-structure}.  All functions which must manipulate global information are
+A variable defined as @samp{struct _reent} is called a @dfn{reentrancy structure}.
+All functions which must manipulate global information are
 available in two versions.  The first version has the usual name, and
 uses a single global instance of the reentrancy structure.  The second
 has a different name, normally formed by prepending @samp{_} and

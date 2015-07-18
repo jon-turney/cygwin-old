@@ -24,6 +24,7 @@
   <xi:include href="time.xml"/>
   <xi:include href="locale.xml"/>
   <!-- reent.tex contains fixed content and nothing seems to include the .def made in reent/ -->
+  <xi:include href="reent.xml"/>
 
   <xi:include href="misc.xml"/>
   <!-- posix is optional -->

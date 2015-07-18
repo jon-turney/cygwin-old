@@ -3,9 +3,110 @@
 <book id="libc" xmlns:xi="http://www.w3.org/2001/XInclude">
   <bookinfo>
     <productname>newlib</productname>
+    <title>The Red Hat newlib C Library</title>
+    <subtitle>Full Configuration</subtitle>
+    <subtitle><code>libc</code> 2.2.0</subtitle>
+    <date>December 2014</date>
+    <authorgroup>
+      <author><firstname>Steve</firstname><surname>Chamberlain</surname></author>
+      <author><firstname>Roland</firstname><surname>Pesch</surname></author>
+      <corpauthor>Red Hat Support</corpauthor>
+      <author><firstname>Jeff</firstname><surname>Johnston</surname></author>
+    </authorgroup>
+    <legalnotice>
+      <para>
+	This file documents the ANSI C library.
+      </para>
+      <para>
+      Copyright (C) 1992, 1993, 1994-2014 Red Hat, Inc.
+      </para>
+      <para>
+	<filename>libc </filename> includes software developed by the University
+	of California, Berkeley and its contributors.
+      </para>
+      <para>
+	<filename>libc </filename> includes software developed by Martin
+	Jackson, Graham Haley and Steve Chamberlain of Tadpole Technology and
+	released to Cygnus.
+      </para>
+      <para>
+	<filename>libc </filename> uses floating-point conversion software
+	developed at AT&amp;T, which includes this copyright information:
+      </para>
+      <blockquote>
+	<para>
+	  The author of this software is David M. Gay.
+	</para>
+	<para>
+	Copyright (c) 1991 by AT&amp;T.
+	</para>
+	<para>
+	  Permission to use, copy, modify, and distribute this software for any
+	  purpose without fee is hereby granted, provided that this entire
+	  notice is included in all copies of any software which is or includes
+	  a copy or modification of this software and in all copies of the
+	  supporting documentation for such software.
+	</para>
+	<para>
+	  THIS SOFTWARE IS BEING PROVIDED "AS IS", WITHOUT ANY EXPRESS OR
+	  IMPLIED WARRANTY.  IN PARTICULAR, NEITHER THE AUTHOR NOR AT&amp;T
+	  MAKES ANY REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE
+	  MERCHANTABILITY OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR
+	  PURPOSE.
+	</para>
+	<para>
+	  Permission is granted to make and distribute verbatim copies of this
+	  manual provided the copyright notice and this permission notice are
+	  preserved on all copies.
+	</para>
+      </blockquote>
+
+	<!--
+	    Permission is granted to process this file with a DocBook processor
+	    and print the results, provided the printed document carries copying
+	    permission notice identical to this one except for the removal of
+	    this paragraph (this paragraph not being relevant to the printed
+	    manual).
+	-->
+
+	<para>
+	  Permission is granted to copy and distribute modified versions of this
+	  manual under the conditions for verbatim copying, subject to the terms
+	  of the GNU General Public License, which includes the provision that
+	  the entire resulting derived work is distributed under the terms of a
+	  permission notice identical to this one.
+	</para>
+
+	<para>
+	  Permission is granted to copy and distribute translations of this
+	  manual into another language, under the above conditions for modified
+	  versions.
+	</para>
+    </legalnotice>
   </bookinfo>
 
-  <!-- XXX: also should put the rest of the content from libc.texinfo here, but I don't need it for just generating manpages -->
+  <preface>
+    <title>Introduction</title>
+    <para>
+      This reference manual describes the functions provided by the Red Hat
+      <quote>newlib</quote> version of the standard ANSI C library.  This
+      document is not intended as an overview or a tutorial for the C library.
+      Each library function is listed with a synopsis of its use, a brief
+      description, return values (including error handling), and portability
+      issues.
+    </para>
+    <para>
+      Some of the library functions depend on support from the underlying
+      operating system and may not be available on every platform.  For embedded
+      systems in particular, many of these underlying operating system services
+      may not be available or may not be fully functional.  The specific
+      operating system subroutines required for a particular library function
+      are listed in the <quote>Portability</quote> section of the function
+      description.  See <xref linkend="syscalls"/>, for a description of the
+      relevant operating system calls.
+    </para>
+  </preface>
+
   <xi:include href="stdlib.xml"/>
   <xi:include href="ctype.xml"/>
   <xi:include href="stdio.xml"/>

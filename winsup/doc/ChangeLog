@@ -1,3 +1,7 @@
+2015-08-21  Jon Turney  <jon.turney@dronecode.org.uk>
+
+	* faq-using.xml: Alphabetize BLODA list.
+
 2015-10-22  Corinna Vinschen  <corinna@vinschen.de>
 
 	* posix.xml (std-iso): New section.

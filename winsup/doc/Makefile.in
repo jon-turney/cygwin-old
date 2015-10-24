@@ -29,6 +29,8 @@ MKDIRP:=$(INSTALL) -m 755 -d
 CC:=@CC@
 CC_FOR_TARGET:=@CC@
 
+XSLTPROC:=xsltproc --xinclude
+XMLPROFILE:=http://docbook.sourceforge.net/release/xsl/current/profiling/profile.xsl
 XMLTO:=xmlto --skip-validation --with-dblatex
 DOCBOOK2XTEXI:=@DOCBOOK2XTEXI@ --xinclude --info --utf8trans-map=charmap
 
@@ -65,6 +67,7 @@ clean:
 	rm -f *.1 utils2man.stamp
 	rm -f *.3 api2man.stamp
 	rm -f *.info* charmap
+	rm -f tmp.*
 
 install: install-all
 
@@ -93,20 +96,20 @@ install-info: cygwin-ug-net.info cygwin-api.info
 	$(INSTALL_DATA) *.info* $(DESTDIR)$(infodir)
 
 cygwin-ug-net/cygwin-ug-net-nochunks.html.gz : $(cygwin-ug-net_SOURCES) html.xsl
-	-$(XMLTO) html-nochunks -m $(srcdir)/html.xsl $<
+	-$(XSLTPROC) --stringparam profile.condition html $(XMLPROFILE) $< >tmp.nochunks.html.xml && $(XMLTO) html-nochunks -m $(srcdir)/html.xsl tmp.nochunks.html.xml
 	-@$(MKDIRP) cygwin-ug-net
-	-cp cygwin-ug-net.html cygwin-ug-net/cygwin-ug-net-nochunks.html
+	-cp tmp.nochunks.html.html cygwin-ug-net/cygwin-ug-net-nochunks.html
 	-rm -f cygwin-ug-net/cygwin-ug-net-nochunks.html.gz
 	-gzip cygwin-ug-net/cygwin-ug-net-nochunks.html
 
 cygwin-ug-net/cygwin-ug-net.html : $(cygwin-ug-net_SOURCES) html.xsl
-	-$(XMLTO) html -o cygwin-ug-net/ -m $(srcdir)/html.xsl $<
+	-$(XSLTPROC) --stringparam profile.condition html $(XMLPROFILE) $< >tmp.html.xml && $(XMLTO) html -o cygwin-ug-net/ -m $(srcdir)/html.xsl tmp.html.xml
 
 cygwin-ug-net/cygwin-ug-net.pdf : $(cygwin-ug-net_SOURCES) fo.xsl
-	-$(XMLTO) pdf -o cygwin-ug-net/ -m $(srcdir)/fo.xsl $<
+	-$(XSLTPROC) --stringparam profile.condition pdf $(XMLPROFILE) $< >tmp.pdf.xml && $(XMLTO) pdf -o cygwin-ug-net/ -m $(srcdir)/fo.xsl tmp.pdf.xml && mv cygwin-ug-net/tmp.pdf.pdf cygwin-ug-net/cygwin-ug-net.pdf
 
 utils2man.stamp: $(cygwin-ug-net_SOURCES) man.xsl
-	$(XMLTO) man -m ${srcdir}/man.xsl $<
+	-$(XSLTPROC) --stringparam profile.condition man $(XMLPROFILE) $< >tmp.man.xml && $(XMLTO) man -m ${srcdir}/man.xsl tmp.man.xml
 	@touch $@
 
 cygwin-ug-net.info: $(cygwin-ug-net_SOURCES) charmap

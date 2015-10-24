@@ -1,0 +1,1780 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="iconvlib" xmlns:xi="http://www.w3.org/2001/XInclude">
+<title>Encoding conversions (<filename>iconv.h</filename>)</title>
+<para>
+This chapter describes the Newlib iconv library.  The iconv functions
+declarations are in <filename>iconv.h</filename>.
+</para>
+
+<section>
+  <title>iconv reference</title>
+  <xi:include href="iconv/lib/iconv.xml"/>
+</section>
+
+<section>
+  <title>Introduction to iconv</title>
+  <indexterm><primary>encoding</primary></indexterm>
+  <indexterm><primary>character set</primary></indexterm>
+  <indexterm><primary>charset</primary></indexterm>
+  <indexterm><primary>CES</primary></indexterm>
+  <indexterm><primary>CCS</primary></indexterm>
+
+  <para>
+    The iconv library is intended to convert characters from one encoding to
+    another. It implements iconv(), iconv_open() and iconv_close() calls, which
+    are defined by the Single Unix Specification.
+  </para>
+
+  <para>
+    In addition to these user-level interfaces, the iconv library also has
+    several useful interfaces which are needed to support coding capabilities of
+    the Newlib Locale infrastructure.  Since Locale support also needs to
+    convert various character sets to and from the <emphasis>wide characters
+    set</emphasis>, the iconv library shares it's capabilities with the Newlib
+    Locale subsystem. Moreover, the iconv library supports several features
+    which are only needed for the Locale infrastructure (for example, the
+    MB_CUR_MAX value).
+  </para>
+
+  <para>
+    The Newlib iconv library was created using concepts from another iconv
+    library implemented by Konstantin Chuguev (ver 2.0). The Newlib iconv
+    library was rewritten from scratch and contains a lot of improvements with
+    respect to the original iconv library.
+  </para>
+
+  <para>
+    Terms like <firstterm>encoding</firstterm> or <firstterm>character
+    set</firstterm> aren't well defined and are often used with various
+    meanings. The following are the definitions of terms which are used in this
+    documentation as well as in the iconv library implementation:
+  </para>
+
+  <itemizedlist>
+    <listitem>
+      <para>
+	<firstterm>encoding</firstterm> - a machine representation of characters
+	by means of bits;
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	<firstterm>Character Set</firstterm> or <firstterm>Charset</firstterm> -
+	just a collection of characters, i.e. the encoding is the machine
+	representation of the character set;
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	<firstterm>CCS</firstterm> (<firstterm>Coded Character Set</firstterm>) -
+	a mapping from an character set to a set of integers <firstterm>character
+	codes</firstterm>;
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	<firstterm>CES</firstterm> (<firstterm>Character Encoding
+	Scheme</firstterm>) - a mapping from a set of character codes to a
+	sequence of bytes;
+      </para>
+    </listitem>
+  </itemizedlist>
+
+  <para>
+    Users usually deal with encodings, for example, KOI8-R, Unicode, UTF-8, ASCII,
+    etc. Encodings are formed by the following chain of steps:
+    <orderedlist>
+      <listitem>
+	<para>
+	  User has a set of characters which are specific to his or her language
+	  (character set).
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  Each character from this set is uniquely numbered, resulting in an
+	  CCS.
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  Each number from the CCS is converted to a sequence of bits or bytes
+	  by means of a CES and form some encoding. Thus, CES may be considered
+	  as a function of CCS which produces some encoding. Note, that CES may
+	  be applied to more than one CCS.
+	</para>
+    </listitem>
+    </orderedlist>
+  </para>
+
+  <para>
+    Thus, an encoding may be considered as one or more CCS + CES.
+  </para>
+
+  <para>
+    Sometimes, there is no CES and in such cases encoding is equivalent to CCS,
+    e.g. KOI8-R or ASCII.
+  </para>
+
+  <para>
+    An example of a more complicated encoding is UTF-8 which is the UCS (or
+    Unicode) CCS plus the UTF-8 CES.
+  </para>
+
+  <para>
+    The following is a brief list of iconv library features:
+    <itemizedlist>
+      <listitem>
+	<para>
+	  Generic architecture;
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  Locale infrastructure support;
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  Automatic generation of the program code which handles
+	  CES/CCS/Encoding/Names/Aliases dependencies;
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  The ability to choose size- or speed-optimazed configuration;
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	The ability to exclude a lot of unneeded code and data from the linking
+	step.
+	</para>
+      </listitem>
+    </itemizedlist>
+  </para>
+</section>
+
+<section>
+  <title>Supported encodings</title>
+
+  <indexterm><primary>big5</primary></indexterm>
+  <indexterm><primary>cp775</primary></indexterm>
+  <indexterm><primary>cp850</primary></indexterm>
+  <indexterm><primary>cp852</primary></indexterm>
+  <indexterm><primary>cp855</primary></indexterm>
+  <indexterm><primary>cp866</primary></indexterm>
+  <indexterm><primary>euc_jp</primary></indexterm>
+  <indexterm><primary>euc_kr</primary></indexterm>
+  <indexterm><primary>euc_tw</primary></indexterm>
+  <indexterm><primary>iso_8859_1</primary></indexterm>
+  <indexterm><primary>iso_8859_10</primary></indexterm>
+  <indexterm><primary>iso_8859_11</primary></indexterm>
+  <indexterm><primary>iso_8859_13</primary></indexterm>
+  <indexterm><primary>iso_8859_14</primary></indexterm>
+  <indexterm><primary>iso_8859_15</primary></indexterm>
+  <indexterm><primary>iso_8859_2</primary></indexterm>
+  <indexterm><primary>iso_8859_3</primary></indexterm>
+  <indexterm><primary>iso_8859_4</primary></indexterm>
+  <indexterm><primary>iso_8859_5</primary></indexterm>
+  <indexterm><primary>iso_8859_6</primary></indexterm>
+  <indexterm><primary>iso_8859_7</primary></indexterm>
+  <indexterm><primary>iso_8859_8</primary></indexterm>
+  <indexterm><primary>iso_8859_9</primary></indexterm>
+  <indexterm><primary>iso_ir_111</primary></indexterm>
+  <indexterm><primary>koi8_r</primary></indexterm>
+  <indexterm><primary>koi8_ru</primary></indexterm>
+  <indexterm><primary>koi8_u</primary></indexterm>
+  <indexterm><primary>koi8_uni</primary></indexterm>
+  <indexterm><primary>ucs_2</primary></indexterm>
+  <indexterm><primary>ucs_2_internal</primary></indexterm>
+  <indexterm><primary>ucs_2be</primary></indexterm>
+  <indexterm><primary>ucs_2le</primary></indexterm>
+  <indexterm><primary>ucs_4</primary></indexterm>
+  <indexterm><primary>ucs_4_internal</primary></indexterm>
+  <indexterm><primary>ucs_4be</primary></indexterm>
+  <indexterm><primary>ucs_4le</primary></indexterm>
+  <indexterm><primary>us_ascii</primary></indexterm>
+  <indexterm><primary>utf_16</primary></indexterm>
+  <indexterm><primary>utf_16be</primary></indexterm>
+  <indexterm><primary>utf_16le</primary></indexterm>
+  <indexterm><primary>utf_8</primary></indexterm>
+  <indexterm><primary>win_1250</primary></indexterm>
+  <indexterm><primary>win_1251</primary></indexterm>
+  <indexterm><primary>win_1252</primary></indexterm>
+  <indexterm><primary>win_1253</primary></indexterm>
+  <indexterm><primary>win_1254</primary></indexterm>
+  <indexterm><primary>win_1255</primary></indexterm>
+  <indexterm><primary>win_1256</primary></indexterm>
+  <indexterm><primary>win_1257</primary></indexterm>
+  <indexterm><primary>win_1258</primary></indexterm>
+
+  <para>
+    The following is the list of currently supported encodings. The first column
+    corresponds to the encoding name, the second column is the list of aliases,
+    the third column is its CES and CCS components names, and the fourth column
+    is a short description.
+  </para>
+
+  <informaltable><tgroup cols='4'>
+    <colspec colnum='1' colwidth="0.20*"/>
+    <colspec colnum='2' colwidth="0.26*"/>
+    <colspec colnum='3' colwidth="0.24*"/>
+    <colspec colnum='4' colwidth="0.30*"/>
+    <tbody>
+      <row>
+	<entry>Name</entry>
+	<entry>Aliases</entry>
+	<entry>CES/CCS</entry>
+	<entry>Short description</entry>
+      </row>
+      <row>
+	<entry>big5</entry>
+	<entry>csbig5, big_five, bigfive, cn_big5, cp950</entry>
+	<entry>table_pcs / big5, us_ascii</entry>
+	<entry>The encoding for the Traditional Chinese.</entry>
+      </row>
+      <row>
+	<entry>cp775</entry>
+	<entry>ibm775, cspc775baltic</entry>
+	<entry>table / cp775</entry>
+	<entry>The updated version of CP 437 that supports the balitic languages.</entry>
+      </row>
+      <row>
+	<entry>cp850</entry>
+	<entry>ibm850, 850, cspc850multilingual</entry>
+	<entry>table / cp850</entry>
+	<entry>IBM 850 - the updated version of CP 437 where several Latin 1
+	characters have been added instead of some less-often used characters like
+	the line-drawing and the greek ones.</entry>
+      </row>
+      <row>
+	<entry>cp852</entry>
+	<entry>ibm852, 852, cspcp852</entry>
+	<entry></entry>
+	<entry>IBM 852 - the updated version of CP 437 where several Latin 2
+	characters have been added instead of some less-often used characters like
+	the line-drawing and the greek ones.</entry>
+      </row>
+      <row>
+	<entry>cp855</entry>
+	<entry>ibm855, 855, csibm855</entry>
+	<entry>table / cp855</entry>
+	<entry>IBM 855 - the updated version of CP 437 that supports Cyrillic.</entry>
+      </row>
+      <row>
+	<entry>cp866</entry>
+	<entry>866, IBM866, CSIBM866</entry>
+	<entry>table / cp866</entry>
+	<entry>IBM 866 - the updated version of CP 855 which follows more the
+	logical Russian alphabet ordering of the alternative variant that is
+	preferred by many Russian users.</entry>
+      </row>
+      <row>
+	<entry>euc_jp</entry>
+	<entry>eucjp</entry>
+	<entry>euc / jis_x0208_1990, jis_x0201_1976, jis_x0212_1990</entry>
+	<entry>EUC-JP - The EUC for Japanese.</entry>
+      </row>
+      <row>
+	<entry>euc_kr</entry>
+	<entry>euckr</entry>
+	<entry>euc / ksx1001</entry>
+	<entry>EUC-KR - The EUC for Korean.</entry>
+      </row>
+      <row>
+	<entry>euc_tw</entry>
+	<entry>euctw</entry>
+	<entry>euc / cns11643_plane1, cns11643_plane2, cns11643_plane14</entry>
+	<entry>EUC-TW - The EUC for Traditional Chinese.</entry>
+      </row>
+      <row>
+	<entry>iso_8859_1</entry>
+	<entry>iso8859_1, iso88591, iso_8859_1:1987, iso_ir_100, latin1, l1, ibm819, cp819, csisolatin1</entry>
+	<entry>table / iso_8859_1</entry>
+	<entry>ISO 8859-1:1987 - Latin 1, West European.</entry>
+      </row>
+      <row>
+	<entry>iso_8859_10</entry>
+	<entry>iso_8859_10:1992, iso_ir_157, iso885910, latin6, l6, csisolatin6, iso8859_10</entry>
+	<entry>table / iso_8859_10</entry>
+	<entry>ISO 8859-10:1992 - Latin 6, Nordic.</entry>
+      </row>
+      <row>
+	<entry>iso_8859_11</entry>
+	<entry>iso8859_11, iso885911</entry>
+	<entry>table / iso_8859_11</entry>
+	<entry>ISO 8859-11 - Thai.</entry>
+      </row>
+      <row>
+	<entry>iso_8859_13</entry>
+	<entry>iso_8859_13:1998, iso8859_13, iso885913</entry>
+	<entry>table / iso_8859_13</entry>
+	<entry>ISO 8859-13:1998 - Latin 7, Baltic Rim.</entry>
+      </row>
+      <row>
+	<entry>iso_8859_14</entry>
+	<entry>iso_8859_14:1998, iso885914, iso8859_14</entry>
+	<entry>table / iso_8859_14</entry>
+	<entry>ISO 8859-14:1998 - Latin 8, Celtic.</entry>
+      </row>
+      <row>
+	<entry>iso_8859_15</entry>
+	<entry>iso885915, iso_8859_15:1998, iso8859_15,</entry>
+	<entry>table / iso_8859_15</entry>
+	<entry>ISO 8859-15:1998 - Latin 9, West Europe, successor of Latin 1.</entry>
+      </row>
+      <row>
+	<entry>iso_8859_2</entry>
+	<entry>iso8859_2, iso88592, iso_8859_2:1987, iso_ir_101, latin2, l2, csisolatin2</entry>
+	<entry>table / iso_8859_2</entry>
+	<entry>ISO 8859-2:1987 - Latin 2, East European.</entry>
+      </row>
+      <row>
+	<entry>iso_8859_3</entry>
+	<entry>iso_8859_3:1988, iso_ir_109, iso8859_3, latin3, l3, csisolatin3, iso88593</entry>
+	<entry>table / iso_8859_3</entry>
+	<entry>ISO 8859-3:1988 - Latin 3, South European.</entry>
+      </row>
+      <row>
+	<entry>iso_8859_4</entry>
+	<entry>iso8859_4, iso88594, iso_8859_4:1988, iso_ir_110, latin4, l4, csisolatin4</entry>
+	<entry>table / iso_8859_4</entry>
+	<entry>ISO 8859-4:1988 - Latin 4, North European.</entry>
+      </row>
+      <row>
+	<entry>iso_8859_5</entry>
+	<entry>iso8859_5, iso88595, iso_8859_5:1988, iso_ir_144, cyrillic, csisolatincyrillic</entry>
+	<entry>table / iso_8859_5</entry>
+	<entry>ISO 8859-5:1988 - Cyrillic.</entry>
+      </row>
+      <row>
+	<entry>iso_8859_6</entry>
+	<entry>iso_8859_6:1987, iso_ir_127, iso8859_6, ecma_114, asmo_708, arabic, csisolatinarabic, iso88596</entry>
+	<entry>table / iso_8859_6</entry>
+	<entry>ISO i8859-6:1987 - Arabic.</entry>
+      </row>
+      <row>
+	<entry>iso_8859_7</entry>
+	<entry>iso_8859_7:1987, iso_ir_126, iso8859_7, elot_928, ecma_118, greek, greek8, csisolatingreek, iso88597</entry>
+	<entry>table / iso_8859_7</entry>
+	<entry>ISO 8859-7:1987 - Greek.</entry>
+      </row>
+      <row>
+	<entry>iso_8859_8</entry>
+	<entry>iso_8859_8:1988, iso_ir_138, iso8859_8, hebrew, csisolatinhebrew, iso88598</entry>
+	<entry>table / iso_8859_8</entry>
+	<entry>ISO 8859-8:1988 - Hebrew.</entry>
+      </row>
+      <row>
+	<entry>iso_8859_9</entry>
+	<entry>iso_8859_9:1989, iso_ir_148, iso8859_9, latin5, l5, csisolatin5, iso88599</entry>
+	<entry>table / iso_8859_9</entry>
+	<entry>ISO 8859-9:1989 - Latin 5, Turkish.</entry>
+      </row>
+      <row>
+	<entry>iso_ir_111</entry>
+	<entry>ecma_cyrillic, koi8_e, koi8e, csiso111ecmacyrillic</entry>
+	<entry>table / iso_ir_111</entry>
+	<entry>ISO IR 111/ECMA Cyrillic.</entry>
+      </row>
+      <row>
+	<entry>koi8_r</entry>
+	<entry>cskoi8r, koi8r, koi8</entry>
+	<entry>table / koi8_r</entry>
+	<entry>RFC 1489 Cyrillic.</entry>
+      </row>
+      <row>
+	<entry>koi8_ru</entry>
+	<entry>koi8ru</entry>
+	<entry>table / koi8_ru</entry>
+	<entry>The obsolete Ukrainian.</entry>
+      </row>
+      <row>
+	<entry>koi8_u</entry>
+	<entry>koi8u</entry>
+	<entry>table / koi8_u</entry>
+	<entry>RFC 2319 Ukrainian.</entry>
+      </row>
+      <row>
+	<entry>koi8_uni</entry>
+	<entry>koi8uni</entry>
+	<entry>table / koi8_uni</entry>
+	<entry>KOI8 Unified.</entry>
+      </row>
+      <row>
+	<entry>ucs_2</entry>
+	<entry>ucs2, iso_10646_ucs_2, iso10646_ucs_2, iso_10646_ucs2, iso10646_ucs2, iso10646ucs2, csUnicode</entry>
+	<entry>ucs_2 / (UCS)</entry>
+	<entry>ISO-10646-UCS-2. Big Endian, NBSP is always interpreted as NBSP (BOM isn't supported).</entry>
+      </row>
+      <row>
+	<entry>ucs_2_internal</entry>
+	<entry>ucs2_internal, ucs_2internal, ucs2internal</entry>
+	<entry>ucs_2_internal / (UCS)</entry>
+	<entry>ISO-10646-UCS-2 in system byte order. NBSP is always interpreted as
+	NBSP (BOM isn't supported).</entry>
+      </row>
+      <row>
+	<entry>ucs_2be</entry>
+	<entry>ucs2be</entry>
+	<entry>ucs_2 / (UCS)</entry>
+	<entry>Big Endian version of ISO-10646-UCS-2 (in fact, equivalent to
+	ucs_2).  Big Endian, NBSP is always interpreted as NBSP (BOM isn't
+	supported).</entry>
+      </row>
+      <row>
+	<entry>ucs_2le</entry>
+	<entry>ucs2le</entry>
+	<entry>ucs_2 / (UCS)</entry>
+	<entry>Little Endian version of ISO-10646-UCS-2.  Little Endian, NBSP is
+	always interpreted as NBSP (BOM isn't supported).</entry>
+      </row>
+      <row>
+	<entry>ucs_4</entry>
+	<entry>ucs4, iso_10646_ucs_4, iso10646_ucs_4, iso_10646_ucs4, iso10646_ucs4, iso10646ucs4</entry>
+	<entry>ucs_4 / (UCS)</entry>
+	<entry>ISO-10646-UCS-4. Big Endian, NBSP is always interpreted as NBSP
+	(BOM isn't supported).</entry>
+      </row>
+      <row>
+	<entry>ucs_4_internal</entry>
+	<entry>ucs4_internal, ucs_4internal, ucs4internal</entry>
+	<entry>ucs_4_internal / (UCS)</entry>
+	<entry>ISO-10646-UCS-4 in system byte order.  NBSP is always interpreted
+	as NBSP (BOM isn't supported).</entry>
+      </row>
+      <row>
+	<entry>ucs_4be</entry>
+	<entry>ucs4be</entry>
+	<entry>ucs_4 / (UCS)</entry>
+	<entry>Big Endian version of ISO-10646-UCS-4 (in fact, equivalent to
+	ucs_4).  Big Endian, NBSP is always interpreted as NBSP (BOM isn't
+	supported).</entry>
+      </row>
+      <row>
+	<entry>ucs_4le</entry>
+	<entry>ucs4le</entry>
+	<entry>ucs_4 / (UCS)</entry>
+	<entry>Little Endian version of ISO-10646-UCS-4. Little Endian, NBSP is
+	always interpreted as NBSP (BOM isn't supported).</entry>
+      </row>
+      <row>
+	<entry>us_ascii</entry>
+	<entry>ansi_x3.4_1968, ansi_x3.4_1986, iso_646.irv:1991, ascii, iso646_us, us, ibm367, cp367, csascii</entry>
+	<entry>us_ascii / (ASCII)</entry>
+	<entry>7-bit ASCII.</entry>
+      </row>
+      <row>
+	<entry>utf_16</entry>
+	<entry>utf16</entry>
+	<entry>utf_16 / (UCS)</entry>
+	<entry>RFC 2781 UTF-16. The very first NBSP code in stream is interpreted as BOM.</entry>
+      </row>
+      <row>
+	<entry>utf_16be</entry>
+	<entry>utf16be</entry>
+	<entry>utf_16 / (UCS)</entry>
+	<entry>Big Endian version of RFC 2781 UTF-16.  NBSP is always interpreted
+	as NBSP (BOM isn't supported).</entry>
+      </row>
+      <row>
+	<entry>utf_16le</entry>
+	<entry>utf16le</entry>
+	<entry>utf_16 / (UCS)</entry>
+	<entry>Little Endian version of RFC 2781 UTF-16.  NBSP is always
+	interpreted as NBSP (BOM isn't supported).</entry>
+      </row>
+      <row>
+	<entry>utf_8</entry>
+	<entry>utf8</entry>
+	<entry>utf_8 / (UCS)</entry>
+	<entry>RFC 3629 UTF-8.</entry>
+      </row>
+      <row>
+	<entry>win_1250</entry>
+	<entry>cp1250</entry>
+	<entry></entry>
+	<entry>Win-1250 Croatian.</entry>
+      </row>
+      <row>
+	<entry>win_1251</entry>
+	<entry>cp1251</entry>
+	<entry>table / win_1251</entry>
+	<entry>Win-1251 - Cyrillic.</entry>
+      </row>
+      <row>
+	<entry>win_1252</entry>
+	<entry>cp1252</entry>
+	<entry>table / win_1252</entry>
+	<entry>Win-1252 - Latin 1.</entry>
+      </row>
+      <row>
+	<entry>win_1253</entry>
+	<entry>cp1253</entry>
+	<entry>table / win_1253</entry>
+	<entry>Win-1253 - Greek.</entry>
+      </row>
+      <row>
+	<entry>win_1254</entry>
+	<entry>cp1254</entry>
+	<entry>table / win_1254</entry>
+	<entry>Win-1254 - Turkish.</entry>
+      </row>
+      <row>
+	<entry>win_1255</entry>
+	<entry>cp1255</entry>
+	<entry>table / win_1255</entry>
+	<entry>Win-1255 - Hebrew.</entry>
+      </row>
+      <row>
+	<entry>win_1256</entry>
+	<entry>cp1256</entry>
+	<entry>table / win_1256</entry>
+	<entry>Win-1256 - Arabic.</entry>
+      </row>
+      <row>
+	<entry>win_1257</entry>
+	<entry>cp1257</entry>
+	<entry>table / win_1257</entry>
+	<entry>Win-1257 - Baltic.</entry>
+      </row>
+      <row>
+	<entry>win_1258</entry>
+	<entry>cp1258</entry>
+	<entry>table / win_1258</entry>
+	<entry>Win-1258 - Vietnamese7 that supports Cyrillic.</entry>
+      </row>
+    </tbody>
+  </tgroup></informaltable>
+</section>
+
+<section>
+  <title>iconv design decisions</title>
+
+  <indexterm><primary>CCS table</primary></indexterm>
+  <indexterm><primary>CES converter</primary></indexterm>
+  <indexterm><primary>Speed-optimized tables</primary></indexterm>
+  <indexterm><primary>Size-optimized tables</primary></indexterm>
+
+  <para>
+    The first iconv library design issue arises when considering the following
+    two design approaches:
+  </para>
+  <orderedlist>
+    <listitem>
+      <para>
+	Have modules which implement conversion from the encoding A to the
+	encoding B and vice versa i.e., one conversion module relates to any two
+	encodings.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	Have modules which implement conversion from the encoding A to the fixed
+	encoding C and vice versa i.e., one conversion module relates to any one
+	encoding A and one fixed encoding C. In this case, to convert from the
+	encoding A to the encoding B, two modules are needed (in order to
+	convert from A to C and then from C to B).
+      </para>
+    </listitem>
+  </orderedlist>
+
+  <para>
+    It's obvious, that we have tradeoff between commonality/flexibility and
+    efficiency: the first method is more efficient since it converts directly;
+    however, it isn't so flexible since for each encoding pair a distinct module
+    is needed.
+  </para>
+
+  <para>
+    The Newlib iconv model uses the second method and always converts through
+    the 32-bit UCS but its design also allows one to write specialized
+    conversion modules if the conversion speed is critical.
+  </para>
+
+  <para>
+    The second design issue is how to break down (decompose) encodings.  The
+    Newlib iconv library uses the fact that any encoding may be considered as
+    one or more CCS plus a CES. It also decomposes its conversion modules on
+    <firstterm>CES converter</firstterm> plus one or more <firstterm>CCS
+    tables</firstterm>. CCS tables map CCS to UCS and vice versa; the CES
+    converters map CCS to the encoding and vice versa.
+  </para>
+
+  <para>
+    As the example, let's consider the conversion from the big5 encoding to the
+    EUC-TW encoding. The big5 encoding may be decomposed to the ASCII and BIG5
+    CCS-es plus the BIG5 CES. EUC-TW may be decomposed on the CNS11643_PLANE1,
+    CNS11643_PLANE2, and CNS11643_PLANE14 CCS-es plus the EUC CES.
+  </para>
+
+  <para>
+    The euc_jp -&gt; big5 conversion is performed as follows:
+  </para>
+
+  <orderedlist>
+    <listitem>
+      <para>
+	The EUC converter performs the EUC-TW encoding to the corresponding
+	CCS-es transformation (CNS11643_PLANE1, CNS11643_PLANE2 and
+	CNS11643_PLANE14 CCS-es);
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	The obtained CCS codes are transformed to the UCS codes using the
+	CNS11643_PLANE1, CNS11643_PLANE2 and CNS11643_PLANE14 CCS tables;
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	The resulting UCS codes are transformed to the ASCII and BIG5 codes
+	using the corresponding CCS tables;
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	The obtained CCS codes are transformed to the big5 encoding using the
+	corresponding CES converter.
+      </para>
+    </listitem>
+  </orderedlist>
+
+  <para>
+    Analogously, the backward conversion is performed as follows:
+  </para>
+
+  <orderedlist>
+    <listitem>
+      <para>
+	The BIG5 converter performs the big5 encoding to the corresponding
+	CCS-es transformation (the ASCII and BIG5 CCS-es);
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	The obtained CCS codes are transformed to the UCS codes using the ASCII
+	and BIG5 CCS tables;
+      </para>
+    </listitem>
+    <listitem>
+      <para> The resulting UCS codes are transformed to the ASCII and BIG5 codes
+      using the corresponding CCS tables;
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	The obtained CCS codes are transformed to the EUC-TW encoding using the
+	corresponding CES converter.
+      </para>
+    </listitem>
+  </orderedlist>
+
+  <para>
+    Note, the above is just an example and real names (which are implemented in
+    the Newlib iconv) of the CES converters and the CCS tables are slightly
+    different.
+  </para>
+
+  <para>
+    The third design issue also relates to flexibility. Obviously, it isn't
+    desirable to always link all the CES converters and the CCS tables to the
+    library but instead, we want to be able to load the needed converters and
+    tables dynamically on demand. This isn't a problem on "big" machines such as
+    a PC, but it may be very problematical within "small" embedded systems.
+  </para>
+
+  <para>
+    Since the CCS tables are just data, it is possible to load them dynamically
+    from external files.  The CES converters, on the other hand are algorithms
+    with some code so a dynamic library loading capability is required.
+  </para>
+
+  <para>
+    Apart from possible restrictions applied by embedded systems (small RAM for
+    example), Newlib itself has no dynamic library support and therefore, all
+    the CES converters which will ever be used must be linked into the library.
+    However, loading of the dynamic CCS tables is possible and is implemented in
+    the Newlib iconv library.  It may be enabled via the Newlib configure script
+    options.
+  </para>
+
+  <para>
+    The next design issue is fine-tuning the iconv library configuration.  One
+    important ability is for iconv to not link all it's converters and tables
+    (if dynamic loading is not enabled) but instead, enable only those encodings
+    which are specified at configuration time (see the section about the
+    configure script options).
+  </para>
+
+  <para>
+    In addition, the Newlib iconv library configure options distinguish between
+    conversion directions. This means that not only are supported encodings
+    selectable, the conversion direction is as well. For example, if user wants
+    the configuration which allows conversions from UTF-8 to UTF-16 and doesn't
+    plan using the "UTF-16 to UTF-8" conversions, he or she can enable only this
+    conversion direction (i.e., no "UTF-16 -&gt; UTF-8"-related code will be
+    included) thus, saving some memory (note, that such technique allows to
+    exclude one half of a CCS table from linking which may be big enough).
+  </para>
+
+  <para>
+    One more design aspect are the speed- and size- optimized tables. Users can
+    select between them using configure script options. The speed-optimized CCS
+    tables are the same as the size-optimized ones in case of 8-bit CCS (e.g.m
+    KOI8-R), but for 16-bit CCS-es the size-optimized CCS tables may be 1.5 to 2
+    times less then the speed-optimized ones. On the other hand, conversion with
+    speed tables is several times faster.
+  </para>
+
+  <para>
+    Its worth to stress that the new encoding support can't be dynamically added
+    into an already compiled Newlib library, even if it needs only an additional
+    CCS table and iconv is configured to use the external files with CCS tables
+    (this isn't the fundamental restriction and the possibility to add new
+    Table-based encoding support dynamically, by means of just adding new .cct
+    file, may be easily added).
+  </para>
+
+  <para>
+    Theoretically, the compiled-in CCS tables should be more appropriate for
+    embedded systems than dynamically loaded CCS tables.  This is because the
+    compiled-in tables are read-only and can be placed in ROM whereas dynamic
+    loading requires RAM.  Moreover, in the current iconv implementation, a
+    distinct copy of the dynamic CCS file is loaded for each opened iconv
+    descriptor even in case of the same encoding.  This means, for example, that
+    if two iconv descriptors for "KOI8-R -&gt; UCS-4BE" and "KOI8-R -&gt;
+    UTF-16BE" are opened, two copies of koi8-r .cct file will be loaded
+    (actually, iconv loads only the needed part of these files).  On the other
+    hand, in the case of compiled-in CCS tables, there will always be only one
+    copy.
+  </para>
+</section>
+
+<section>
+  <title>iconv configuration</title>
+  <indexterm><primary>--enable-newlib-iconv-encodings</primary></indexterm>
+  <indexterm><primary>--enable-newlib-iconv-from-encodings</primary></indexterm>
+  <indexterm><primary>--enable-newlib-iconv-from-encodings</primary></indexterm>
+  <indexterm><primary>--enable-newlib-iconv-external-ccs</primary></indexterm>
+  <indexterm><primary>NLSPATH</primary></indexterm>
+
+  <para>
+    To enable an encoding, the
+    <option>--enable-newlib-iconv-encodings</option> configure script option
+    should be used. This option accepts a comma-separated list of
+    <emphasis>encodings</emphasis> that should be enabled. The option enables
+    each encoding in both ("to" and "from") directions.
+  </para>
+
+  <para>
+    The <option>--enable-newlib-iconv-from-encodings</option> configure script
+    option enables "from" support for each encoding that was passed to it.
+  </para>
+
+  <para>
+    The <option>--enable-newlib-iconv-to-encodings</option> configure script
+    option enables "to" support for each encoding that was passed to it.
+  </para>
+
+  <para>
+    Example: if user plans only the "KOI8-R -&gt; UTF-8", "UTF-8 -&gt; ISO-8859-5" and
+    "KOI8-R -&gt; UCS-2" conversions, the most optimal way (minimal iconv
+    code and data will be linked) is to configure Newlib with the following
+    options:
+  </para>
+
+  <screen>
+    --enable-newlib-iconv-encodings=UTF-8
+    --enable-newlib-iconv-from-encodings=KOI8-R
+    --enable-newlib-iconv-to-encodings=UCS-2,ISO-8859-5
+  </screen>
+
+  <para>
+    which is the same as
+  </para>
+
+  <screen>
+    --enable-newlib-iconv-from-encodings=KOI8-R,UTF-8
+    --enable-newlib-iconv-to-encodings=UCS-2,ISO-8859-5,UTF-8
+  </screen>
+
+  <para>
+    User may also just use the
+  </para>
+
+  <screen>
+    --enable-newlib-iconv-encodings=KOI8-R,ISO-8859-5,UTF-8,UCS-2
+  </screen>
+
+  <para>
+    configure script option, but it isn't so optimal since there will be some
+    unneeded data and code.
+  </para>
+
+  <para>
+    The <option>--enable-newlib-iconv-external-ccs</option> option enables
+    iconv's capabilities to work with the external CCS files.
+  </para>
+
+  <para>
+    The <option>--enable-target-optspace</option> Newlib configure script option
+    also affects the iconv library. If this option is present, the library uses
+    the size optimized CCS tables. This means, that only the size-optimized CCS
+    tables will be linked or, if the
+    <option>--enable-newlib-iconv-external-ccs</option> configure script option
+    was used, the iconv library will load the size-optimized tables. If the
+    <option>--enable-target-optspace</option> configure script option is
+    disabled, the speed-optimized CCS tables are used.
+  </para>
+
+  <para>
+    Note: .cct files are searched by iconv_open in the $NLSPATH/iconv_data/
+    directory.  Thus, the NLSPATH environment variable should be set.
+  </para>
+</section>
+
+<section>
+  <title>Encoding names</title>
+  <indexterm><primary>encoding name</primary></indexterm>
+  <indexterm><primary>encoding alias</primary></indexterm>
+  <indexterm><primary>normalized name</primary></indexterm>
+
+  <para>
+    Each encoding has one <firstterm>name</firstterm> and a number of
+    <firstterm>aliases</firstterm>. When user works with the iconv library
+    (i.e., when the <code>iconv_open</code> call is used) both name or aliases
+    may be used. The same is when encoding names are used in configure script
+    options.
+  </para>
+
+  <para>
+    Names and aliases may be specified in any case (small or capital letters)
+    and the <userinput>-</userinput> symbol is equivalent to the
+    <userinput>_</userinput> symbol.
+  </para>
+
+  <para>
+    Internally the Newlib iconv library always converts aliases to names. It
+    also converts names and aliases in the <firstterm>normalized</firstterm>
+    form which means that all capital letters are converted to small letters and
+    the <userinput>-</userinput> symbols are converted to
+    <userinput>_</userinput> symbols.
+  </para>
+</section>
+
+<section>
+  <title>CCS tables</title>
+  <indexterm><primary>Size-optimized CCS table</primary></indexterm>
+  <indexterm><primary>Size-optimized CCS table</primary></indexterm>
+  <indexterm><primary>mktbl.pl Perl script</primary></indexterm>
+  <indexterm><primary>.cct files</primary></indexterm>
+  <indexterm><primary>The CCT tables source files</primary></indexterm>
+  <indexterm><primary>CCS source files</primary></indexterm>
+
+  <para>
+    The iconv library stores files with CCS tables in the the
+    <emphasis>ccs/</emphasis> subdirectory. The CCS tables for any CCS may be
+    kept in two forms - in the binary form (<firstterm>.cct files</firstterm>,
+    see the <emphasis>ccs/binary/</emphasis> subdirectory) and in form of
+    compilable .c source files. The .cct files are only used when the
+    <option>--enable-newlib-iconv-external-ccs</option> configure script option
+    is enabled.  The .c files are linked to the Newlib library if the
+    corresponding encoding is enabled.
+  </para>
+
+  <para>
+    As stated earlier, the Newlib iconv library performs all conversions through
+    the 32-bit UCS, but the codes which are used in most CCS-es, fit into the
+    first 16-bit subset of the 32-bit UCS set.  Thus, in order to make the CCS
+    tables more compact, the 16-bit UCS-2 is used instead of the 32-bit UCS-4.
+  </para>
+
+  <para>
+    CCS tables may be 8- or 16-bit wide. 8-bit CCS tables map 8-bit CCS to
+    16-bit UCS-2 and vice versa while 16-bit CCS tables map 16-bit CCS to 16-bit
+    UCS-2 and vice versa.  8-bit tables are small (in size) while 16-bit tables
+    may be big enough.  Because of this, 16-bit CCS tables may be either speed-
+    or size-optimized. Size-optimized CCS tables are smaller then
+    speed-optimized ones, but the conversion process is slower if the
+    size-optimized CCS tables are used. 8-bit CCS tables have only
+    size-optimized variant.
+  </para>
+
+  <para>
+    Each CCS table (both speed- and size-optimized) consists of
+    <firstterm>from_ucs</firstterm> and <firstterm>to_ucs</firstterm>
+    subtables. "from_ucs" subtable maps UCS-2 codes to CCS codes, while "to_ucs"
+    subtable maps CCS codes to UCS-2 codes.
+  </para>
+
+  <para>
+    Almost all 16-bit CCS tables contain less then 0xFFFF codes and a lot of
+    gaps exist.
+  </para>
+
+  <section>
+    <title>Speed-optimized tables format</title>
+    <para>
+      In case of 8-bit speed-optimized CCS tables the "to_ucs" subtables format
+      is trivial - it is just the array of 256 16-bit UCS codes. Therefore, an
+      UCS-2 code <emphasis>Y</emphasis> corresponding to a
+      <emphasis>X</emphasis> CCS code is calculates as <emphasis>Y =
+      to_ucs[X]</emphasis>.
+    </para>
+
+    <para>
+      Obviously, the simplest way to create the "from_ucs" table or the 16-bit
+      "to_ucs" table is to use the huge 16-bit array like in case of the 8-bit
+      "to_ucs" table. But almost all the 16-bit CCS tables contain less then
+      0xFFFF code maps and this fact may be exploited to reduce the size of the
+      CCS tables.
+    </para>
+
+    <para>
+      In this chapter the "UCS-2 -&gt; CCS" 8-bit CCS table format is
+      described. The 16-bit "CCS -&gt; UCS-2" CCS table format is the same,
+      except the mapping direction and the CCS bits number.
+    </para>
+
+    <para>
+      In case of the 8-bit speed-optimized table the "from_ucs" subtable
+      corresponds the "from_ucs" array and has the following layout:
+    </para>
+
+    <literallayout class="monospaced">
+from_ucs array:
+-------------------------------------
+
+0xFF mapping (2 bytes) (only for
+8-bit table).
+
+-------------------------------------
+
+Heading block
+
+-------------------------------------
+
+Block 1
+
+-------------------------------------
+
+Block 2
+
+-------------------------------------
+
+  ...
+
+-------------------------------------
+
+Block N
+
+-------------------------------------
+    </literallayout>
+
+    <para>
+      The 0x0000-0xFFFF 16-bit code range is divided to 256 code subranges. Each
+      subrange is represented by an 256-element <firstterm>block</firstterm>
+      (256 1-byte elements or 256 2-byte element in case of 16-bit CCS table)
+      with elements which are equivalent to the CCS codes of this subrange.  If
+      the "UCS-2 -&gt; CCS" mapping has big enough gaps, some blocks will be
+      absent and there will be less then 256 blocks.
+    </para>
+    <para>
+      Any element number <emphasis>m</emphasis> of <firstterm>the heading
+      block</firstterm> (which contains 256 2-byte elements) corresponds to the
+      <emphasis>m</emphasis>-th 256-element subrange.  If the subrange contains
+      some codes, the value of the <emphasis>m</emphasis>-th element of the
+      heading block contains the offset of the corresponding block in the
+      "from_ucs" array. If there is no codes in the subrange, the heading block
+      element contains 0xFFFF.
+    </para>
+    <para>
+      If there are some gaps in a block, the corresponding block elements have
+      the 0xFF value. If there is an 0xFF code present in the CCS, it's mapping
+      is defined in the first 2-byte element of the "from_ucs" array.
+    </para>
+    <para>
+      Having such a table format, the algorithm of searching the CCS code
+      <emphasis>X</emphasis> which corresponds to the UCS-2 code
+      <emphasis>Y</emphasis> is as follows.
+    </para>
+    <orderedlist>
+      <listitem>
+	<para>
+	  If <emphasis>Y</emphasis> is equivalent to the value of the first
+	  2-byte element of the "from_ucs" array, <emphasis>X</emphasis> is
+	  0xFF. Else, continue to search.
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  Calculate the block number: <emphasis>BlkN = (Y &amp; 0xFF00) &gt;&gt; 8</emphasis>.
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  If the heading block element with number <emphasis>BlkN</emphasis> is
+	  0xFFFF, there is no corresponding CCS code (error, wrong input
+	  data). Else, fetch the "flom_ucs" array index of the
+	  <emphasis>BlkN</emphasis>-th block.
+	</para>
+      </listitem>
+      <listitem>
+	<para>Calculate the offset of the <emphasis>X</emphasis> code in its
+	block: <emphasis>Xindex = Y &amp; 0xFF</emphasis>
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  If the <emphasis>Xindex</emphasis>-th element of the block (which is
+	  equivalent to <emphasis>from_ucs[BlkN+Xindex]</emphasis>) value is
+	  0xFF, there is no corresponding CCS code (error, wrong input
+	  data). Else, <emphasis>X = from_ucs[BlkN+Xindex]</emphasis>.
+	</para>
+      </listitem>
+    </orderedlist>
+  </section>
+
+  <section>
+    <title>Size-optimized tables format</title>
+    <para>
+      As it is stated above, size-optimized tables exist only for 16-bit CCS-es.
+      This is because there is too small difference between the speed-optimized
+      and the size-optimized table sizes in case of 8-bit CCS-es.
+    </para>
+    <para>
+      Formats of the "to_ucs" and "from_ucs" subtables are equivalent in case of
+      size-optimized tables.
+    </para>
+    <para>
+      This sections describes the format of the "UCS-2 -&gt; CCS" size-optimized
+      CCS table. The format of "CCS -&gt; UCS-2" table is the same.
+    </para>
+    <para>
+      The idea of the size-optimized tables is to split the UCS-2 codes ("from"
+      codes) on <firstterm>ranges</firstterm> (<firstterm>range</firstterm> is a
+      number of consecutive UCS-2 codes).  Then CCS codes ("to" codes) are
+      stored only for the codes from these ranges. Distinct "from" codes, which
+      have no range (<firstterm>unranged codes</firstterm>, are stored together
+      with the corresponding "to" codes.
+    </para>
+    <para>
+      The following is the layout of the size-optimized table array:
+    </para>
+
+    <literallayout class="monospaced">
+size_arr array:
+
+-------------------------------------
+
+Ranges number (2 bytes)
+
+-------------------------------------
+
+Unranged codes number (2 bytes)
+
+-------------------------------------
+
+Unranged codes array index (2 bytes)
+
+-------------------------------------
+
+Ranges indexes (triads)
+
+-------------------------------------
+
+Ranges
+
+-------------------------------------
+
+Unranged codes array
+
+-------------------------------------
+    </literallayout>
+
+    <para>
+      The <firstterm>Unranged codes array index</firstterm>
+      <emphasis>size_arr</emphasis> section helps to find the offset of the
+      needed range in the <emphasis>size_arr</emphasis> and has the following
+      format (triads): </para><para> the first code in range, the last code in
+      range, range offset.
+    </para>
+    <para>
+      The array of these triads is sorted by the firs element, therefore it is
+      possible to quickly find the needed range index.
+    </para>
+    <para>
+      Each range has the corresponding sub-array containing the "to"
+      codes. These sub-arrays are stored in the place marked as "Ranges" in the
+      layout diagram.
+    </para>
+    <para>
+      The "Unranged codes array" contains pairs ("from" code, "to" code") for
+      each unranged code. The array of these pairs is sorted by "from" code
+      values, therefore it is possible to find the needed pair quickly.
+    </para>
+    <para>
+      Note, that each range requires 6 bytes to form its index. If, for example,
+      there are two ranges (1 - 5 and 9 - 10), and one unranged code (7), 12
+      bytes are needed for two range indexes and 4 bytes for the unranged code
+      (total 16). But it is better to join both ranges as 1 - 10 and mark codes
+      6 and 8 as absent. In this case, only 6 additional bytes for the range
+      index and 4 bytes to mark codes 6 and 8 as absent are needed (total 10
+      bytes). This optimization is done in the size-optimized tables.  Thus,
+      ranges may contain small gaps. The absent codes in ranges are marked as
+      0xFFFF.
+    </para>
+    <para>
+      Note, a pair of "from" codes is stored by means of unranged codes since
+      the number of bytes which are needed to form the range is greater than the
+      number of bytes to store two unranged codes (5 against 4).
+    </para>
+    <para>
+      The algorithm of searching of the CCS code <emphasis>X</emphasis> which
+      corresponds to the UCS-2 code <emphasis>Y</emphasis> (input) in the "UCS-2
+      -&gt; CCS" size-optimized table is as follows.
+    </para>
+    <orderedlist>
+      <listitem>
+	<para>
+	  Try to find the corresponding triad in the "Unranged codes array
+	  index". Since we are searching in the sorted array, we can do it
+	  quickly (divide by 2, compare, etc).
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  If the triad is found, fetch the <emphasis>X</emphasis> code from the
+	  corresponding range array. If it is 0xFFFF, return an error.
+	</para>
+      </listitem>
+      <listitem>
+	<para>
+	  If there is no corresponding triad, search the <emphasis>X</emphasis>
+	  code among the sorted unranged codes. Return error, if noting was
+	  found.
+	</para>
+      </listitem>
+    </orderedlist>
+  </section>
+
+  <section>
+    <title>.cct ant .c CCS Table files</title>
+    <para>
+      The .c source files for 8-bit CCS tables have "to_ucs" and "from_ucs"
+      speed-optimized tables. The .c source files for 16-bit CCS tables have
+      "to_ucs_speed", "to_ucs_size", "from_ucs_speed" and "from_ucs_size"
+      tables.
+    </para>
+    <para>
+      When .c files are compiled and used, all the 16-bit and 32-bit values have
+      the native endian format (Big Endian for the BE systems and Little Endian
+      for the LE systems) since they are compile for the system before they are
+      used.
+    </para>
+    <para>
+      In case of .cct files, which are intended for dynamic CCS tables loading,
+      the CCS tables are stored either in LE or BE format. Since the .cct files
+      are generated by the 'mktbl.pl' Perl script, it is possible to choose the
+      endianess of the tables. It is also possible to store two copies (both LE
+      and BE) of the CCS tables in one .cct file. The default .cct files (which
+      come with the Newlib sources) have both LE and BE CCS tables. The Newlib
+      iconv library automatically chooses the needed CCS tables (with
+      appropriate endianess).
+    </para>
+    <para>
+      Note, the .cct files are only used when the
+      <option>--enable-newlib-iconv-external-ccs</option> is used.
+    </para>
+  </section>
+
+  <section>
+    <title>The 'mktbl.pl' Perl script</title>
+    <para>
+      The 'mktbl.pl' script is intended to generate .cct and .c CCS table files
+      from the <firstterm>CCS source files</firstterm>.
+    </para>
+    <para>
+      The CCS source files are just text files which has one or more colons with
+      CCS &lt;-&gt; UCS-2 codes mapping. To see an example of the CCS table
+      source files see one of them using URL-s which will be given bellow.
+    </para>
+    <para>
+      The following table describes where the source files for CCS table files
+      provided by the Newlib distribution are located.
+    </para>
+
+    <informaltable><tgroup cols='2'>
+      <colspec colnum='1' colwidth='0.25*'/>
+      <colspec colnum='2' colwidth='0.75*'/>
+      <tbody>
+	<row>
+	  <entry>Name</entry>
+	  <entry>URL</entry>
+	</row>
+	<row>
+	  <entry>big5</entry>
+	  <entry>http://www.unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/OTHER/BIG5.TXT</entry>
+	</row>
+	<row>
+	  <entry>
+	    <para>cns11643_plane1</para>
+	    <para>cns11643_plane14</para>
+	    <para>cns11643_plane2</para>
+	  </entry>
+	  <entry>http://www.unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/OTHER/CNS11643.TXT</entry>
+	</row>
+	<row>
+	  <entry>
+	    <para>cp775</para>
+	    <para>cp850</para>
+	    <para>cp852</para>
+	    <para>cp855</para>
+	    <para>cp866</para>
+	  </entry>
+	  <entry>http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/</entry>
+	</row>
+	<row>
+	  <entry>
+	    <para>iso_8859_1</para>
+	    <para>iso_8859_2</para>
+	    <para>iso_8859_3</para>
+	    <para>iso_8859_4</para>
+	    <para>iso_8859_5</para>
+	    <para>iso_8859_6</para>
+	    <para>iso_8859_7</para>
+	    <para>iso_8859_8</para>
+	    <para>iso_8859_9</para>
+	    <para>iso_8859_10</para>
+	    <para>iso_8859_11</para>
+	    <para>iso_8859_13</para>
+	    <para>iso_8859_14</para>
+	    <para>iso_8859_15</para>
+	  </entry>
+	  <entry>http://www.unicode.org/Public/MAPPINGS/ISO8859/</entry>
+	</row>
+	<row>
+	  <entry>iso_ir_111</entry>
+	  <entry>http://crl.nmsu.edu/~mleisher/csets/ISOIR111.TXT</entry>
+	</row>
+	<row>
+	  <entry>
+	    <para>jis_x0201_1976</para>
+	    <para>jis_x0208_1990</para>
+	    <para>jis_x0212_1990</para>
+	  </entry>
+	  <entry>http://www.unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/JIS/JIS0201.TXT</entry>
+	</row>
+	<row>
+	  <entry>koi8_r</entry>
+	  <entry>http://www.unicode.org/Public/MAPPINGS/VENDORS/MISC/KOI8-R.TXT</entry>
+	</row>
+	<row>
+	  <entry>koi8_ru</entry>
+	  <entry>http://crl.nmsu.edu/~mleisher/csets/KOI8RU.TXT</entry>
+	</row>
+	<row>
+	  <entry>koi8_u</entry>
+	  <entry>http://crl.nmsu.edu/~mleisher/csets/KOI8U.TXT</entry>
+	</row>
+	<row>
+	  <entry>koi8_uni</entry>
+	  <entry>http://crl.nmsu.edu/~mleisher/csets/KOI8UNI.TXT</entry>
+	</row>
+	<row>
+	  <entry>ksx1001</entry>
+	  <entry>http://www.unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/KSC/KSX1001.TXT</entry>
+	</row>
+	<row>
+	  <entry>
+	    <para>win_1250</para>
+	    <para>win_1251</para>
+	    <para>win_1252</para>
+	    <para>win_1253</para>
+	    <para>win_1254</para>
+	    <para>win_1255</para>
+	    <para>win_1256</para>
+	    <para>win_1257</para>
+	    <para>win_1258</para>
+	  </entry>
+	  <entry>http://www.unicode.org/Public/MAPPINGS/VENDORS/MICSFT/PC/</entry>
+	</row>
+      </tbody>
+      </tgroup></informaltable>
+
+      <para>
+	The CCS source files aren't distributed with Newlib because of License
+	restrictions in most Unicode.org's files.
+      </para>
+      <para>
+	The following are 'mktbl.pl' options which were used to generate .cct
+	files. Note, to generate CCS tables source files <option>-s</option>
+	option should be added.
+      </para>
+      <orderedlist>
+	<listitem>
+	  <para>
+	    For the iso_8859_10.cct, iso_8859_13.cct, iso_8859_14.cct,
+	    iso_8859_15.cct, iso_8859_1.cct, iso_8859_2.cct, iso_8859_3.cct,
+	    iso_8859_4.cct, iso_8859_5.cct, iso_8859_6.cct, iso_8859_7.cct,
+	    iso_8859_8.cct, iso_8859_9.cct, iso_8859_11.cct, win_1250.cct,
+	    win_1252.cct, win_1254.cct win_1256.cct, win_1258.cct, win_1251.cct,
+	    win_1253.cct, win_1255.cct, win_1257.cct, koi8_r.cct, koi8_ru.cct,
+	    koi8_u.cct, koi8_uni.cct, iso_ir_111.cct, big5.cct, cp775.cct,
+	    cp850.cct, cp852.cct, cp855.cct, cp866.cct, cns11643.cct files, only
+	    the <option>-i &lt;SRC_FILE_NAME&gt;</option> option were used.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    To generate the jis_x0208_1990.cct file, the <option>-i
+	    jis_x0208_1990.txt -x 2 -y 3</option> options were used.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    To generate the cns11643_plane1.cct file, the <option>-i
+	    cns11643.txt -p1 -N cns11643_plane1 -o cns11643_plane1.cct</option>
+	    options were used.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para>
+	    To generate the cns11643_plane2.cct file, the <option>-i
+	    cns11643.txt -p2 -N cns11643_plane2 -o cns11643_plane2.cct</option>
+	    options were used.
+	  </para>
+	</listitem>
+	<listitem>
+	  <para> To generate the cns11643_plane14.cct file, the <option>-i
+	  cns11643.txt -p0xE -N cns11643_plane14 -o
+	  cns11643_plane14.cct</option> options were used.
+	  </para>
+	</listitem>
+      </orderedlist>
+      <para>
+	For more info about the 'mktbl.pl' options, see the 'mktbl.pl -h'
+	output.
+      </para>
+      <para>
+	It is assumed that CCS codes are 16 or less bits wide. If there are
+	wider CCS codes in the CCS source file, the bits which are higher then
+	16 defines plane (see the cns11643.txt CCS source file).
+      </para>
+      <para>
+	Sometimes, it is impossible to map some CCS codes to the 16-bit UCS if,
+	for example, several different CCS codes are mapped to one UCS-2 code or
+	one CCS code is mapped to the pair of UCS-2 codes. In these cases, such
+	CCS codes (<firstterm>lost codes</firstterm>) aren't just rejected but
+	instead, they are mapped to the default UCS-2 code (which is currently
+	the <code>?</code> character's code).
+      </para>
+    </section>
+</section>
+
+<section>
+  <title>CES converters</title>
+  <indexterm><primary>PCS</primary></indexterm>
+ <para>
+   Similar to the CCS tables, CES converters are also split into "from UCS" and
+   "to UCS" parts. Depending on the iconv library configuration, these parts are
+   enabled or disabled.
+ </para>
+ <para>
+   The following it the list of CES converters which are currently present in
+   the Newlib iconv library.
+ </para>
+ <itemizedlist>
+   <listitem>
+     <para>
+       <emphasis>euc</emphasis> - supports the <emphasis>euc_jp</emphasis>,
+       <emphasis>euc_kr</emphasis> and <emphasis>euc_tw</emphasis>
+       encodings. The <emphasis>euc</emphasis> CES converter uses the
+       <emphasis>table</emphasis> and the <emphasis>us_ascii</emphasis> CES
+       converters.
+     </para>
+   </listitem>
+   <listitem>
+     <para>
+       <emphasis>table</emphasis> - this CES converter corresponds to "null" and
+       just performs tables-based conversion using 8- and 16-bit CCS
+       tables. This converter is also used by any other CES converter which
+       needs the CCS table-based conversions. The <emphasis>table</emphasis>
+       converter is also responsible for .cct files loading.
+     </para>
+   </listitem>
+   <listitem>
+     <para>
+       <emphasis>table_pcs</emphasis> - this is the wrapper over the
+       <emphasis>table</emphasis> converter which is intended for 16-bit
+       encodings which also use the <firstterm>Portable Character
+       Set</firstterm> (<firstterm>PCS</firstterm>) which is the same as the
+       <emphasis>US-ASCII</emphasis>.  This means, that if the first byte the
+       CCS code is in range of [0x00-0x7f], this is the 7-bit PCS code. Else,
+       this is the 16-bit CCS code. Of course, the 16-bit codes must not contain
+       bytes in the range of [0x00-0x7f].  The <emphasis>big5</emphasis>
+       encoding uses the <emphasis>table_pcs</emphasis> CES converter and the
+       <emphasis>table_pcs</emphasis> CES converter depends on the
+       <emphasis>table</emphasis> CES converter.
+     </para>
+   </listitem>
+   <listitem>
+     <para>
+       <emphasis>ucs_2</emphasis> - intended for the <emphasis>ucs_2</emphasis>,
+       <emphasis>ucs_2be</emphasis> and <emphasis>ucs_2le</emphasis> encodings
+       support.
+     </para>
+   </listitem>
+   <listitem>
+     <para>
+       <emphasis>ucs_4</emphasis> - intended for the <emphasis>ucs_4</emphasis>,
+       <emphasis>ucs_4be</emphasis> and <emphasis>ucs_4le</emphasis> encodings
+       support.
+     </para>
+   </listitem>
+   <listitem>
+     <para>
+       <emphasis>ucs_2_internal</emphasis> - intended for the
+       <emphasis>ucs_2_internal</emphasis> encoding support.
+     </para>
+   </listitem>
+   <listitem>
+     <para>
+       <emphasis>ucs_4_internal</emphasis> - intended for the
+       <emphasis>ucs_4_internal</emphasis> encoding support.
+     </para>
+   </listitem>
+   <listitem>
+     <para>
+       <emphasis>us_ascii</emphasis> - intended for the
+       <emphasis>us_ascii</emphasis> encoding support. In principle, the most
+       natural way to support the <emphasis>us_ascii</emphasis> encoding is to
+       define the <emphasis>us_ascii</emphasis> CCS and use the
+       <emphasis>table</emphasis> CES converter. But for the optimization
+       purposes, the specialized <emphasis>us_ascii</emphasis> CES converter was
+       created.
+     </para>
+   </listitem>
+   <listitem>
+     <para>
+       <emphasis>utf_16</emphasis> - intended for the
+       <emphasis>utf_16</emphasis>, <emphasis>utf_16be</emphasis> and
+       <emphasis>utf_16le</emphasis> encodings support.
+     </para>
+   </listitem>
+   <listitem>
+     <para>
+       <emphasis>utf_8</emphasis> - intended for the <emphasis>utf_8</emphasis>
+       encoding support.
+     </para>
+   </listitem>
+ </itemizedlist>
+</section>
+
+<section>
+  <title>The encodings description file</title>
+  <indexterm><primary>encoding.deps description file</primary></indexterm>
+  <indexterm><primary>mkdeps.pl Perl script</primary></indexterm>
+
+  <para>
+    To simplify the process of adding new encodings support allowing to
+    automatically generate a lot of "glue" files.
+  </para>
+  <para>
+    There is the 'encoding.deps' file in the <emphasis>lib/</emphasis>
+    subdirectory which is used to describe encoding's properties. The
+    'mkdeps.pl' Perl script uses 'encoding.deps' to generates the "glue" files.
+  </para>
+  <para>
+    The 'encoding.deps' file is composed of sections, each section consists of
+    entries, each entry contains some encoding/CES/CCS description.
+  </para>
+  <para>
+    The 'encoding.deps' file's syntax is very simple. Currently only two
+    sections are defined: <emphasis>ENCODINGS</emphasis> and
+    <emphasis>CES_DEPENDENCIES</emphasis>.
+  </para>
+  <para>
+    Each <emphasis>ENCODINGS</emphasis> section's entry describes one encoding and
+    contains the following information.
+  </para>
+  <itemizedlist>
+    <listitem>
+      <para>
+	Encoding name (the <emphasis>ENCODING</emphasis> field). The name should
+	be unique and only one name is possible.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	The encoding's CES converter name (the <emphasis>CES</emphasis>
+	field). Only one CES converter is allowed.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	The whitespace-separated list of CCS table names which are used by the
+	encoding (the <emphasis>CCS</emphasis> field).
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	The whitespace-separated list of aliases names (the
+	<emphasis>ENCODING</emphasis> field).
+      </para>
+    </listitem>
+  </itemizedlist>
+
+  <para>
+    Note all names in the 'encoding.deps' file have to have the normalized form.
+  </para>
+  <para>
+    Each <emphasis>CES_DEPENDENCIES</emphasis> section's entry describes
+    dependencies of one CES converted. For example, the <emphasis>euc</emphasis>
+    CES converter depends on the <emphasis>table</emphasis> and the
+    <emphasis>us_ascii</emphasis> CES converter since the
+    <emphasis>euc</emphasis> CES converter uses them. This means, that both
+    <emphasis>table</emphasis> and <emphasis>us_ascii</emphasis> CES converters
+    should be linked if the <emphasis>euc</emphasis> CES converter is enabled.
+  </para>
+  <para>
+    The <emphasis>CES_DEPENDENCIES</emphasis> section defines the following:
+  </para>
+  <itemizedlist>
+    <listitem>
+      <para>
+	the CES converter name for which the dependencies are defined in this
+	entry (the <emphasis>CES</emphasis> field);
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	the whitespace-separated list of CES converters which are needed for
+	this CES converter (the <emphasis>USED_CES</emphasis> field).
+      </para>
+    </listitem>
+  </itemizedlist>
+  <para>
+    The 'mktbl.pl' Perl script automatically solves the following tasks.
+  </para>
+  <itemizedlist>
+    <listitem>
+      <para>
+	User works with the iconv library in terms of encodings and doesn't know
+	anything about CES converters and CCS tables. The script automatically
+	generates code which enables all needed CES converters and CCS tables
+	for all encodings, which were enabled by the user.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	The CES converters may have dependencies and the script automatically
+	generates the code which handles these dependencies.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	The list of encoding's aliases is also automatically generated.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	The script uses a lot of macros in order to enable only the minimum set
+	of code/data which is needed to support the requested encodings in the
+	requested directions.
+      </para>
+    </listitem>
+  </itemizedlist>
+  <para>
+    The 'mktbl.pl' Perl script is intended to interpret the 'encoding.deps' file
+    and generates the following files.
+  </para>
+  <itemizedlist>
+    <listitem>
+      <para>
+	<emphasis>lib/encnames.h</emphasis> - this header files contains macro
+	definitions for all encoding names
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	<emphasis>lib/aliasesbi.c</emphasis> - the array of encoding names and
+	aliases. The array is used to find the name of requested encoding by
+	it's alias.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	<emphasis>ces/cesbi.c</emphasis> - this file defines two arrays
+	(<code>_iconv_from_ucs_ces</code> and <code>_iconv_to_ucs_ces</code>)
+	which contain description of enabled "to UCS" and "from UCS" CES
+	converters and the names of encodings which are supported by these CES
+	converters.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	<emphasis>ces/cesbi.h</emphasis> - this file contains the set of macros
+	which defines the set of CES converters which should be enabled if only
+	the set of enabled encodings is given (through macros defined in the
+	<emphasis>newlib.h</emphasis> file). Note, that one CES converter may
+	handle several encodings.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	<emphasis>ces/cesdeps.h</emphasis> - the CES converters dependencies are
+	handled in this file.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	<emphasis>ccs/ccsdeps.h</emphasis> - the array of linked-in CCS tables
+	is defined here.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	<emphasis>ccs/ccsnames.h</emphasis> - this header files contains macro
+	definitions for all CCS names.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	<emphasis>encoding.aliases</emphasis> - the list of supported encodings
+	and their aliases which is intended for the Newlib configure scripts in
+	order to handle the iconv-related configure script options.
+      </para>
+    </listitem>
+  </itemizedlist>
+</section>
+
+<section>
+  <title>How to add new encoding</title>
+  <para>
+    At first, the new encoding should be broken down to CCS and CES. Then, the
+    process of adding new encoding is split to the following activities.
+  </para>
+  <orderedlist>
+    <listitem>
+      <para>
+	Generate the .cct CCS file and the .c source file for the new encoding's
+	CCS (if it isn't already present). To do this, the CCS source file
+	should be had and the 'mktbl.pl' script should be used.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	Write the corresponding CES converter (if it isn't already present). Use
+	the existing CES converters as an example.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	Add the corresponding entries to the 'encoding.deps' file and regenerate
+	the autogenerated "glue" files using the 'mkdeps.pl' script.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	Don't forget to add entries to the newlib/newlib.hin file.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	Of course, the 'Makefile.am'-s should also be updated (if new files were
+	added) and the 'Makefile.in'-s should be regenerated using the correct
+	version of 'automake'.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	Don't forget to update the documentation (the list of supported
+	encodings and CES converters).
+      </para>
+    </listitem>
+  </orderedlist>
+  <para>
+    In case a new encoding doesn't fit to the CES/CCS decomposition model or it
+    is desired to add the specialized (non UCS-based) conversion support, the
+    Newlib iconv library code should be upgraded.
+  </para>
+</section>
+
+
+<section>
+  <title>The locale support interfaces</title>
+  <para>
+    The newlib iconv library also has some interface functions (besides the
+    <code>iconv</code>, <code>iconv_open</code> and <code>iconv_close</code>
+    interfaces) which are intended for the Locale subsystem. All the
+    locale-related code is placed in the <emphasis>lib/iconvnls.c</emphasis>
+    file.
+  </para>
+  <para>
+    The following is the description of the locale-related interfaces:
+  </para>
+  <itemizedlist>
+    <listitem>
+      <para>
+	<code>_iconv_nls_open</code> - opens two iconv descriptors for "CCS
+	-&gt; wchar_t" and "wchar_t -&gt; CCS" conversions. The normalized CCS
+	name is passed in the function parameters. The
+	<emphasis>wchar_t</emphasis> characters encoding is either
+	ucs_2_internal or ucs_4_internal depending on size of
+	<emphasis>wchar_t</emphasis>.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	<code>_iconv_nls_conv</code> - the function is similar to the
+	<code>iconv</code> functions, but if there is no character in the output
+	encoding which corresponds to the character in the input encoding, the
+	default conversion isn't performed (the <code>iconv</code> function sets
+	such output characters to the <code>?</code> symbol and this is the
+	behavior, which is specified in SUSv3).
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	<code>_iconv_nls_get_state</code> - returns the current encoding's shift state
+	(the <code>mbstate_t</code> object).
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	<code>_iconv_nls_set_state</code> sets the current encoding's shift
+	state (the <code>mbstate_t</code> object).
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	<code>_iconv_nls_is_stateful</code> - checks whether the encoding is
+	stateful or stateless.
+      </para>
+    </listitem>
+    <listitem>
+      <para>
+	<code>_iconv_nls_get_mb_cur_max</code> - returns the maximum length (the
+	maximum bytes number) of the encoding's characters.
+      </para>
+    </listitem>
+  </itemizedlist>
+</section>
+
+<section>
+  <title>Contact</title>
+  <para>
+    The author of the original BSD iconv library (Alexander Chuguev) no longer
+    supports that code.
+  </para>
+  <para>
+    Any questions regarding the iconv library may be forwarded to Artem
+    B. Bityuckiy (dedekind@oktetlabs.ru or dedekind@mail.ru) as well as to the
+    public Newlib mailing list.
+  </para>
+</section>
+</chapter>

@@ -223,6 +223,23 @@ info_TEXINFOS = libc.texinfo
 libc_TEXINFOS = sigset.texi extra.texi posix.texi stdio64.texi iconvset.texi \
 	targetdep.tex $(SUBDEFS)
 
+docbook: $(SUBDEFS) libc.in.xml
+	xsltproc --xinclude --path ${builddir} --nonet ${srcdir}/../refcontainers.xslt ${srcdir}/libc.in.xml >libc.xml
+	-xmllint --postvalid --noent --nonet --noout libc.xml
+	xmlto --skip-validation html-nochunks --stringparam funcsynopsis.style=ansi libc.xml
+	xmlto --skip-validation pdf --with-dblatex --stringparam funcsynopsis.style=ansi libc.xml
+	xmlto --skip-validation man -m ${srcdir}/../man.xsl libc.xml
+
+doc: docbook
+
+install-data-local:
+	mkdir -p $(DESTDIR)$(htmldir)
+	$(INSTALL_DATA) libc.html $(DESTDIR)$(htmldir)/
+	mkdir -p $(DESTDIR)$(docdir)
+	$(INSTALL_DATA) libc.pdf $(DESTDIR)$(docdir)/
+	mkdir -p $(DESTDIR)$(mandir)/man3
+	$(INSTALL_DATA) *.3 $(DESTDIR)$(mandir)/man3
+
 .PHONY: force
 force:
 
@@ -230,7 +247,8 @@ CLEANFILES = $(CRT0) \
 	sigset.texi stmp-sigset extra.texi stmp-extra \
 	stdio64.texi stmp-stdio64 targetdep.tex stmp-targetdep \
 	tmp-sigset.texi tmp-iconvset.texi tmp-extra.texi \
-	tmp-stdio64.texi tmp-posix.texi tmp-targetdep.texi
+	tmp-stdio64.texi tmp-posix.texi tmp-targetdep.texi \
+	*.xml libc.hml libc.pdf *.3
 
 ACLOCAL_AMFLAGS = -I .. -I ../..
 CONFIG_STATUS_DEPENDENCIES = $(newlib_basedir)/configure.host

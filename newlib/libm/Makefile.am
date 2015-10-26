@@ -58,10 +58,27 @@ math/stmp-def: stmp-targetdep ; @true
 
 complex/stmp-def: stmp-targetdep ; @true
 
+docbook: math/stmp-def complex/stmp-def libm.in.xml
+	xsltproc --xinclude --path ${builddir} --nonet ${srcdir}/../refcontainers.xslt ${srcdir}/libm.in.xml >libm.xml
+	-xmllint --xinclude -path ${builddir} --postvalid --noent --nonet --noout libm.xml
+	xmlto --skip-validation --searchpath ${builddir} html-nochunks --stringparam funcsynopsis.style=ansi libm.xml
+	xmlto --skip-validation --searchpath ${builddir} pdf --with-dblatex --stringparam funcsynopsis.style=ansi libm.xml
+	xmlto --skip-validation --searchpath ${builddir} man -m ${srcdir}/../man.xsl libm.xml
+
+doc: docbook
+
+install-data-local:
+	mkdir -p $(DESTDIR)$(htmldir)
+	$(INSTALL_DATA) libm.html $(DESTDIR)$(htmldir)/
+	mkdir -p $(DESTDIR)$(docdir)
+	$(INSTALL_DATA) libm.pdf $(DESTDIR)$(docdir)/
+	mkdir -p $(DESTDIR)$(mandir)/man3
+	$(INSTALL_DATA) *.3 $(DESTDIR)$(mandir)/man3/
+
 .PHONY: force
 force:
 
-CLEANFILES = tmp.texi targetdep.tex stmp-targetdep
+CLEANFILES = tmp.texi targetdep.tex stmp-targetdep *.xml libm.hml libm.pdf *.3
 
 ACLOCAL_AMFLAGS = -I .. -I ../..
 CONFIG_STATUS_DEPENDENCIES = $(newlib_basedir)/configure.host

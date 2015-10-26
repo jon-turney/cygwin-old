@@ -362,6 +362,15 @@ dvi-recursive: doc/makedoc
 doc/makedoc:
 	cd doc && $(MAKE) all
 
+doc: doc/makedoc
+	for d in $(SUBDIRS); do \
+	  if test "$$d" != "."; then \
+	    (cd $$d && $(MAKE) doc) || exit 1; \
+	  fi; \
+	done
+
+.PHONY: doc
+
 CONFIG_STATUS_DEPENDENCIES = $(newlib_basedir)/configure.host
 
 # Multilib support.

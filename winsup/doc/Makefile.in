@@ -29,7 +29,7 @@ MKDIRP:=$(INSTALL) -m 755 -d
 CC:=@CC@
 CC_FOR_TARGET:=@CC@
 
-XMLTO:=xmlto --skip-validation --with-dblatex
+XMLTO:=xmlto --skip-validation --with-dblatex --profile
 DOCBOOK2XTEXI:=@DOCBOOK2XTEXI@ --xinclude --info --utf8trans-map=charmap
 
 include $(srcdir)/../Makefile.common
@@ -93,33 +93,33 @@ install-info: cygwin-ug-net.info cygwin-api.info
 	$(INSTALL_DATA) *.info* $(DESTDIR)$(infodir)
 
 cygwin-ug-net/cygwin-ug-net-nochunks.html.gz : $(cygwin-ug-net_SOURCES) html.xsl
-	-$(XMLTO) html-nochunks -m $(srcdir)/html.xsl $<
+	-$(XMLTO) --stringparam profile.condition=html html-nochunks -m $(srcdir)/html.xsl $<
 	-@$(MKDIRP) cygwin-ug-net
 	-cp cygwin-ug-net.html cygwin-ug-net/cygwin-ug-net-nochunks.html
 	-rm -f cygwin-ug-net/cygwin-ug-net-nochunks.html.gz
 	-gzip cygwin-ug-net/cygwin-ug-net-nochunks.html
 
 cygwin-ug-net/cygwin-ug-net.html : $(cygwin-ug-net_SOURCES) html.xsl
-	-$(XMLTO) html -o cygwin-ug-net/ -m $(srcdir)/html.xsl $<
+	-$(XMLTO) --stringparam profile.condition=html html -o cygwin-ug-net/ -m $(srcdir)/html.xsl $<
 
 cygwin-ug-net/cygwin-ug-net.pdf : $(cygwin-ug-net_SOURCES) fo.xsl
-	-$(XMLTO) pdf -o cygwin-ug-net/ -m $(srcdir)/fo.xsl $<
+	-$(XMLTO) --stringparam profile.condition=pdf pdf -o cygwin-ug-net/ -m $(srcdir)/fo.xsl $<
 
 utils2man.stamp: $(cygwin-ug-net_SOURCES) man.xsl
-	-$(XMLTO) man -m ${srcdir}/man.xsl $<
+	-$(XMLTO) --stringparam profile.condition=man man -m ${srcdir}/man.xsl $<
 	@touch $@
 
 cygwin-ug-net.info: $(cygwin-ug-net_SOURCES) charmap
 	-$(DOCBOOK2XTEXI) $(srcdir)/cygwin-ug-net.xml --string-param output-file=cygwin-ug-net
 
 cygwin-api/cygwin-api.html : $(cygwin-api_SOURCES) html.xsl
-	-$(XMLTO) html -o cygwin-api/ -m $(srcdir)/html.xsl $<
+	-$(XMLTO) --stringparam profile.condition=html html -o cygwin-api/ -m $(srcdir)/html.xsl $<
 
 cygwin-api/cygwin-api.pdf : $(cygwin-api_SOURCES) fo.xsl
-	-$(XMLTO) pdf -o cygwin-api/ -m $(srcdir)/fo.xsl $<
+	-$(XMLTO) --stringparam profile.condition=pdf pdf -o cygwin-api/ -m $(srcdir)/fo.xsl $<
 
 api2man.stamp: $(cygwin-api_SOURCES) man.xsl
-	-$(XMLTO) man -m ${srcdir}/man.xsl $<
+	-$(XMLTO) --stringparam profile.condition=man man -m ${srcdir}/man.xsl $<
 	@touch $@
 
 cygwin-api.info: $(cygwin-api_SOURCES) charmap

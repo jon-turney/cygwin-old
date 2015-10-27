@@ -44,6 +44,15 @@ cygcheck -h
 
       <refsect1>
 	<title>Options</title>
+
+  <para condition="man">
+    This text only appears in the manpage for cygcheck
+  </para>
+
+  <para condition="html">
+    This text only appears in the html for cygcheck
+  </para>
+
 	<screen>
 At least one command option or a PROGRAM is required, as shown above.
 
@@ -90,8 +99,9 @@ Note: -c, -f, and -l only report on packages that are currently installed. To
       <command>dpkg</command> or <command>rpm</command>,
       <command>cygcheck</command> is similar in many ways. (The major
       difference is that <command>setup.exe</command> handles installing and
-      uninstalling packages; see <xref linkend="internet-setup"/> for more
-      information.) </para>
+      uninstalling packages; see <xref linkend="internet-setup"/>
+      <phrase condition="man">in the Cygwin User's Guide</phrase>
+      for more information.) </para>
     <para> The <literal>-c</literal> option checks the version and status of
       installed Cygwin packages. If you specify one or more package names,
       <command>cygcheck</command> will limit its output to those packages, or
@@ -373,7 +383,9 @@ Other options:
       options. The default is to use the character set of the current locale
       defined by one of the internationalization environment variables
       <envar>LC_ALL</envar>, <envar>LC_CTYPE</envar>, or <envar>LANG</envar>,
-      see <xref linkend="setup-locale"/>. This is sometimes not sufficient for
+      (See <xref linkend="setup-locale"/>
+      <phrase condition="man">in the Cygwin User's Guide</phrase>).
+      This is sometimes not sufficient for
       interaction with native Windows tools, which might expect native,
       non-ASCII characters in a specific Windows codepage. Console tools, for
       instance, might expect pathnames in the current OEM codepage, while
@@ -617,8 +629,9 @@ line separates the ACLs for each file.
       displays the filename, the owner, the group, the setuid (s), setgid (s),
       and sticky (t) bits if available, and both the ACL and the default ACL,
       if it exists. For more information on Cygwin and Windows ACLs, see
-      <xref linkend="ntsec"/> in the Cygwin User's Guide. The format
-      for ACL output is as follows:
+      <xref linkend="ntsec"/>
+      <phrase condition="man">in the Cygwin User's Guide</phrase>.
+      The format for ACL output is as follows:
       <screen>
      # file: filename
      # owner: name or uid
@@ -1069,6 +1082,7 @@ groups on domain controllers and domain member machines.
       <title>Description</title>
      <para>Don't use this command to generate a local /etc/group file, unless you
      really need one.  See the Cygwin User's Guide for more information.
+     <!-- XXX: perhaps this needs to be an xref as it just tells you to read the document you are reading -->
      </para>
 
     <para>The <command>mkgroup</command> program can be used to create a local
@@ -1176,6 +1190,7 @@ on domain controllers and domain member machines.
       <title>Description</title>
     <para>Don't use this command to generate a local /etc/passwd file, unless you
     really need one.  See the Cygwin User's Guide for more information.</para>
+    <!-- XXX: perhaps this needs to be an xref as it just tells you to read the document you are reading -->
 
     <para>The <command>mkpasswd</command> program can be used to create a
       <filename>/etc/passwd</filename> file.  Cygwin doesn't need this file,
@@ -1270,7 +1285,9 @@ mount &lt;posixpath&gt;
       points given in <filename>/etc/fstab</filename>, mount points created or
       changed with <command>mount</command> are not persistent. They disappear
       immediately after the last process of the current user exited. Please see
-      <xref linkend="mount-table"/> for more information on the concepts behind
+      <xref linkend="mount-table"/>
+      <phrase condition="man">in the Cygwin User's Guide</phrase>
+      for more information on the concepts behind
       the Cygwin POSIX file system and strategies for using mounts. To remove
       mounts temporarily, use <command>umount</command></para>
 
@@ -1369,8 +1386,8 @@ D: on /d type fat (binary,user,noumount)
 </screen>
 
       <para>For a more complete description of the mount options and the
-        <filename>/etc/fstab</filename> file, see <xref linkend="mount-table"
-        />.</para>
+        <filename>/etc/fstab</filename> file, see <xref linkend="mount-table"/>
+        <phrase condition="man">in the Cygwin User's Guide</phrase>.</para>
 
       <para>Note that all mount points added with <command>mount</command> are
         user mount points. System mount points can only be specified in the
@@ -1636,7 +1653,9 @@ specifying an empty password.
       with public key authentication and get a full qualified user token with
       all credentials for network access. However, the method has some
       drawbacks security-wise. This is explained in more detail in <xref
-      linkend="ntsec"/>.</para>
+      linkend="ntsec"/>
+      <phrase condition="man">in the Cygwin User's Guide</phrase>
+      .</para>
 
     <para>Please note that storing passwords in that registry area is a
       privileged operation which only administrative accounts are allowed to
@@ -1997,7 +2016,9 @@ At least one of (-b, -d, -f, -k, -m, -s) must be specified
       either replace its complete ACL (<literal>-s</literal>,
       <literal>-f</literal>), or it will add, modify, or delete ACL entries.
       For more information on Cygwin and Windows ACLs, see see <xref
-      linkend="ntsec"/> in the Cygwin User's Guide. </para>
+      linkend="ntsec"/>
+      <phrase condition="man">in the Cygwin User's Guide</phrase>
+      .</para>
 
     <para> Acl_entries are one or more comma-separated ACL entries from the
       following list:
@@ -2478,8 +2499,9 @@ umount [OPTION] [&lt;posixpath&gt;]
       user mount points. The <literal>-U</literal> flag may be used to specify
       removing all user mount points from the current user session.</para>
 
-    <para>See <xref linkend="mount-table"/> for more information on the mount
-      table.</para>
+    <para>See <xref linkend="mount-table"/>
+      <phrase condition="man">in the Cygwin User's Guide</phrase>
+      for more information on the mount table.</para>
     </refsect1>
   </refentry>
 

@@ -1,3 +1,8 @@
+2015-06-25  Jon Turney  <jon.turney@dronecode.org.uk>
+
+	* utils.xml : Consistently refer to cross-references outside this
+	file as in the Cygwin User's Guide.
+
 2015-10-27  Corinna Vinschen  <corinna@vinschen.de>
 
 	* new-features.xml (ov-new2.3): Document strftime %s addition.

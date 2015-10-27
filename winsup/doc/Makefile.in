@@ -106,7 +106,7 @@ cygwin-ug-net/cygwin-ug-net.pdf : $(cygwin-ug-net_SOURCES) fo.xsl
 	-$(XMLTO) pdf -o cygwin-ug-net/ -m $(srcdir)/fo.xsl $<
 
 utils2man.stamp: $(cygwin-ug-net_SOURCES) man.xsl
-	$(XMLTO) man -m ${srcdir}/man.xsl $<
+	-$(XMLTO) man -m ${srcdir}/man.xsl $<
 	@touch $@
 
 cygwin-ug-net.info: $(cygwin-ug-net_SOURCES) charmap
@@ -119,7 +119,7 @@ cygwin-api/cygwin-api.pdf : $(cygwin-api_SOURCES) fo.xsl
 	-$(XMLTO) pdf -o cygwin-api/ -m $(srcdir)/fo.xsl $<
 
 api2man.stamp: $(cygwin-api_SOURCES) man.xsl
-	$(XMLTO) man -m ${srcdir}/man.xsl $<
+	-$(XMLTO) man -m ${srcdir}/man.xsl $<
 	@touch $@
 
 cygwin-api.info: $(cygwin-api_SOURCES) charmap

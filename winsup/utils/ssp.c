@@ -13,20 +13,6 @@
  *
  */
 
-#ifdef __x86_64__
-
-#include <stdio.h>
-
-int
-main (int argc, char **argv)
-{
-  fprintf (stderr, "%s: This application is unsuported on x86_64 so far.\n",
-	   argv[0]);
-  return 1;
-}
-
-#else
-
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -37,6 +23,8 @@ main (int argc, char **argv)
 #include <windows.h>
 #include <getopt.h>
 #include <cygwin/version.h>
+
+#define DEBUG 1
 
 static char *prog_name;
 
@@ -56,17 +44,29 @@ static struct option longopts[] =
 
 static char opts[] = "+cdehlstvV";
 
+#ifdef __x86_64__
+#define KERNEL_ADDR 0x00007FF000000000
+#define CONTEXT_SP Rsp
+#define CONTEXT_IP Rip
+typedef DWORD64 CONTEXT_REG;
+#define CONTEXT_REG_FMT "%016llx"
+#else
 #define KERNEL_ADDR 0x77000000
+#define CONTEXT_SP Esp
+#define CONTEXT_IP Eip
+typedef DWORD CONTEXT_REG;
+#define CONTEXT_REG_FMT "08%x"
+#endif
 
 #define TRACE_SSP 0
 
 #define VERBOSE	1
 #define TIMES	1000
 
-/* from winsup/gmon.h */
+/* from winsup/cygwin/gmon.h */
 struct gmonhdr {
-	unsigned long	lpc;	/* base pc address of sample buffer */
-	unsigned long	hpc;	/* max pc address of sampled buffer */
+	size_t	lpc;		/* base pc address of sample buffer */
+	size_t	hpc;		/* max pc address of sampled buffer */
 	int	ncnt;		/* size of sample buffer (plus this header) */
 	int	version;	/* version number */
 	int	profrate;	/* profiling clock rate */
@@ -76,19 +76,19 @@ struct gmonhdr {
 #define HISTCOUNTER unsigned short
 
 typedef struct {
-  unsigned int base_address;
+  void *base_address;
   int pcount;
   int scount;
   char *name;
 } DllInfo;
 
 typedef struct {
-  unsigned int address;
+  void *address;
   unsigned char real_byte;
 } PendingBreakpoints;
 
-unsigned low_pc=0, high_pc=0;
-unsigned last_pc=0, pc, last_sp=0, sp;
+CONTEXT_REG low_pc, high_pc=0;
+CONTEXT_REG last_pc=0, pc, last_sp=0, sp;
 int total_cycles, count;
 HANDLE hProcess;
 PROCESS_INFORMATION procinfo;
@@ -125,10 +125,10 @@ PendingBreakpoints pending_breakpoints[MAXPENDS];
 int num_breakpoints=0;
 
 static void
-add_breakpoint (unsigned int address)
+add_breakpoint (void *address)
 {
   int i;
-  DWORD rv;
+  SIZE_T rv;
   static char int3[] = { 0xcc };
   for (i=0; i<num_breakpoints; i++)
     {
@@ -141,31 +141,31 @@ add_breakpoint (unsigned int address)
     return;
   pending_breakpoints[i].address = address;
   ReadProcessMemory (hProcess,
-		    (void *)address,
-		    &(pending_breakpoints[i].real_byte),
-		    1, &rv);
+		     address,
+		     &(pending_breakpoints[i].real_byte),
+		     1, &rv);
 
   WriteProcessMemory (hProcess,
-		     (void *)address,
-		     (LPVOID)int3, 1, &rv);
+		      address,
+		      (LPVOID)int3, 1, &rv);
   if (i >= num_breakpoints)
     num_breakpoints = i+1;
 }
 
 static int
-remove_breakpoint (unsigned int address)
+remove_breakpoint (void *address)
 {
   int i;
-  DWORD rv;
+  SIZE_T rv;
   for (i=0; i<num_breakpoints; i++)
     {
       if (pending_breakpoints[i].address == address)
 	{
 	  pending_breakpoints[i].address = 0;
 	  WriteProcessMemory (hProcess,
-			     (void *)address,
-			     &(pending_breakpoints[i].real_byte),
-			     1, &rv);
+			      address,
+			      &(pending_breakpoints[i].real_byte),
+			      1, &rv);
 	  return 1;
 	}
     }
@@ -231,7 +231,7 @@ dll_sort (const void *va, const void *vb)
 }
 
 static char *
-addr2dllname (unsigned int addr)
+addr2dllname (void *addr)
 {
   int i;
   for (i=num_dlls-1; i>=0; i--)
@@ -249,10 +249,17 @@ dump_registers (HANDLE thread)
 {
   context.ContextFlags = CONTEXT_FULL;
   GetThreadContext (thread, &context);
+#ifdef __x86_64__
+  printf ("eax %016llx ebx %016llx ecx %016llx edx %016llx eip\n",
+	  context.Rax, context.Rbx, context.Rcx, context.Rdx);
+  printf ("esi %016llx edi %016llx ebp %016llx esp %016llx %016llx\n",
+	  context.Rsi, context.Rdi, context.Rbp, context.Rsp, context.Rip);
+#else
   printf ("eax %08lx ebx %08lx ecx %08lx edx %08lx eip\n",
 	  context.Eax, context.Ebx, context.Ecx, context.Edx);
   printf ("esi %08lx edi %08lx ebp %08lx esp %08lx %08lx\n",
-	  context.Esi, context.Esi, context.Ebp, context.Esp, context.Eip);
+	  context.Esi, context.Edi, context.Ebp, context.Esp, context.Eip);
+#endif
 }
 
 typedef struct Edge {
@@ -326,13 +333,13 @@ run_program (char *cmdline)
 		     | DEBUG_ONLY_THIS_PROCESS,
 		     0, 0, &startup, &procinfo))
     {
-      fprintf (stderr, "Can't create process: error %ld\n", GetLastError ());
+      fprintf (stderr, "Can't create process: error %u\n", (unsigned int)GetLastError ());
       exit (1);
     }
 
   hProcess = procinfo.hProcess;
-#if 0
-  printf ("procinfo: %08x %08x %08x %08x\n",
+#if DEBUG
+  printf ("procinfo: %p %p %08x %08x\n",
 	 hProcess, procinfo.hThread, procinfo.dwProcessId, procinfo.dwThreadId);
 #endif
 
@@ -369,7 +376,7 @@ run_program (char *cmdline)
   while (running)
     {
       int src, dest;
-      DWORD rv;
+      SIZE_T rv;
       DEBUG_EVENT event;
       int contv = DBG_CONTINUE;
 
@@ -382,7 +389,7 @@ run_program (char *cmdline)
       hThread = lookup_thread_id (event.dwThreadId, &tix);
 
 #if 0
-      printf ("DE: %x/%d %d %d ",
+      printf ("DE: %p/%d %d %d ",
 	     hThread, tix,
 	     event.dwDebugEventCode, num_active_threads);
       for (src=0; src<num_active_threads; src++)
@@ -390,8 +397,8 @@ run_program (char *cmdline)
 	  int sc = SuspendThread (active_threads[src]);
 	  int rv = GetThreadContext (active_threads[src], &context);
 	  ResumeThread (active_threads[src]);
-	  printf (" [%x,%x,%x]",
-		 active_threads[src], context.Eip, active_thread_ids[src]);
+	  printf (" [%p," CONTEXT_REG_FMT ",%x]",
+		  active_threads[src], context.CONTEXT_IP, active_thread_ids[src]);
 	}
       printf ("\n");
 #endif
@@ -404,10 +411,10 @@ run_program (char *cmdline)
 
 	case CREATE_THREAD_DEBUG_EVENT:
 	  if (verbose)
-	    printf ("create thread %08lx at %08x %s\n",
-		   event.dwThreadId,
-		   (int)event.u.CreateThread.lpStartAddress,
-		   addr2dllname ((unsigned int)event.u.CreateThread.lpStartAddress));
+	    printf ("create thread %08x at %p %s\n",
+		    (int)event.dwThreadId,
+		   event.u.CreateThread.lpStartAddress,
+		   addr2dllname (event.u.CreateThread.lpStartAddress));
 
 	  active_thread_ids[num_active_threads] = event.dwThreadId;
 	  active_threads[num_active_threads] = event.u.CreateThread.hThread;
@@ -417,16 +424,16 @@ run_program (char *cmdline)
 	  if (trace_all_threads && stepping_enabled)
 	    {
 	      thread_step_flags[num_active_threads-1] = stepping_enabled;
-	      add_breakpoint ((int)event.u.CreateThread.lpStartAddress);
+	      add_breakpoint (event.u.CreateThread.lpStartAddress);
 	    }
 
 	  break;
 
 	case EXIT_THREAD_DEBUG_EVENT:
 	  if (verbose)
-	    printf ("exit thread %08lx, code=%ld\n",
-		   event.dwThreadId,
-		   event.u.ExitThread.dwExitCode);
+	    printf ("exit thread %08x, code=%d\n",
+		    (int)event.dwThreadId,
+		    (int)event.u.ExitThread.dwExitCode);
 
 	  for (src=0, dest=0; src<num_active_threads; src++)
 	    if (active_thread_ids[src] != event.dwThreadId)
@@ -443,24 +450,24 @@ run_program (char *cmdline)
 	  switch (event.u.Exception.ExceptionRecord.ExceptionCode)
 	    {
 	    case STATUS_BREAKPOINT:
-	      if (remove_breakpoint ((int)event.u.Exception.ExceptionRecord.ExceptionAddress))
+	      if (remove_breakpoint (event.u.Exception.ExceptionRecord.ExceptionAddress))
 		{
-		  context.Eip --;
+		  context.CONTEXT_IP --;
 		  if (!rv)
 		    SetThreadContext (hThread, &context);
-		  if (ReadProcessMemory (hProcess, (void *)context.Esp, &rv, 4, &rv))
+		  if (ReadProcessMemory (hProcess, (void *)context.CONTEXT_SP, &rv, sizeof(rv), &rv))
 		      thread_return_address[tix] = rv;
 		}
 	      set_step_threads (event.dwThreadId, stepping_enabled);
 	    case STATUS_SINGLE_STEP:
 	      opcode_count++;
-	      pc = (unsigned int)event.u.Exception.ExceptionRecord.ExceptionAddress;
-	      sp = (unsigned int)context.Esp;
+	      pc = (CONTEXT_REG)event.u.Exception.ExceptionRecord.ExceptionAddress;
+	      sp = context.CONTEXT_SP;
 	      if (tracing_enabled)
-		fprintf (tracefile, "%08x %08lx\n", pc, event.dwThreadId);
+		fprintf (tracefile, CONTEXT_REG_FMT " %08x\n", pc, (int)event.dwThreadId);
 	      if (trace_console)
 		{
-		  printf ("%d %08x\n", tix, pc);
+		  printf ("%d " CONTEXT_REG_FMT "\n", tix, pc);
 		  fflush (stdout);
 		}
 
@@ -469,7 +476,7 @@ run_program (char *cmdline)
 		  int i;
 		  for (i=num_dlls-1; i>=0; i--)
 		    {
-		      if (dll_info[i].base_address < context.Eip)
+		      if (dll_info[i].base_address < (void *)context.CONTEXT_IP)
 			{
 			  if (hThread == procinfo.hThread)
 			    dll_info[i].pcount++;
@@ -485,26 +492,26 @@ run_program (char *cmdline)
 		  static int ncalls=0;
 		  static int qq=0;
 		  if (++qq % 100 == 0)
-		    fprintf (stderr, " %08x %d %d \r",
+		    fprintf (stderr, " " CONTEXT_REG_FMT " %d %d \r",
 			    pc, ncalls, opcode_count);
 
-		  if (sp == last_sp-4)
+		  if (sp == last_sp-sizeof(CONTEXT_REG))
 		    {
 		      ncalls++;
 		      store_call_edge (last_pc, pc);
 		      if (last_pc < KERNEL_ADDR && pc > KERNEL_ADDR)
 			{
-			  int retaddr;
-			  DWORD rv;
+#if 0
+			  CONTEXT_REG retaddr;
+			  SIZE_T rv;
 			  ReadProcessMemory (hProcess,
 					    (void *)sp,
 					    (LPVOID)&(retaddr),
-					    4, &rv);
-#if 0
-			  printf ("call last_pc = %08x pc = %08x rv = %08x\n",
+					     sizeof(retaddr), &rv);
+			  printf ("call last_pc = " CONTEXT_REG_FMT " pc = " CONTEXT_REG_FMT " rv = " CONTEXT_REG_FMT "\n",
 				 last_pc, pc, retaddr);
 			  /* experimental - try to skip kernel calls for speed */
-			  add_breakpoint (retaddr);
+			  add_breakpoint ((void *)retaddr);
 			  set_step_threads (event.dwThreadId, 0);
 #endif
 			}
@@ -520,10 +527,10 @@ run_program (char *cmdline)
 	    default:
 	      if (verbose)
 		{
-		  printf ("exception %ld, ", event.u.Exception.dwFirstChance);
-		  printf ("code: %lx flags: %lx\n",
-			 event.u.Exception.ExceptionRecord.ExceptionCode,
-			 event.u.Exception.ExceptionRecord.ExceptionFlags);
+		  printf ("exception %d, ", (int)event.u.Exception.dwFirstChance);
+		  printf ("code: %x flags: %x\n",
+			  (int)event.u.Exception.ExceptionRecord.ExceptionCode,
+			  (int)event.u.Exception.ExceptionRecord.ExceptionFlags);
 		  if (event.u.Exception.dwFirstChance == 1)
 		    dump_registers (hThread);
 		}
@@ -562,11 +569,11 @@ run_program (char *cmdline)
 			    &rv);
 	  if (!i)
 	    {
-	      printf ("error reading memory: %ld %ld\n", rv, GetLastError ());
+	      printf ("error reading memory: %lld %u\n", rv, (unsigned int)GetLastError ());
 	    }
 	  if (verbose)
-	    printf ("ODS: %x/%d \"%s\"\n",
-		   (int)hThread, tix, string);
+	    printf ("ODS: %p/%d \"%s\"\n",
+		    hThread, tix, string);
 
 	  if (strcmp (string, "ssp on") == 0)
 	    {
@@ -585,21 +592,22 @@ run_program (char *cmdline)
 
 	case LOAD_DLL_DEBUG_EVENT:
 	  if (verbose)
-	    printf ("load dll %08x:",
-		   (int)event.u.LoadDll.lpBaseOfDll);
+	    printf ("load dll %p:",
+		    event.u.LoadDll.lpBaseOfDll);
 
 	  dll_ptr = (char *)"( u n k n o w n ) \0\0";
 	  if (event.u.LoadDll.lpImageName)
 	    {
+	      void *buf;
 	      ReadProcessMemory (hProcess,
 				event.u.LoadDll.lpImageName,
-				(LPVOID)&src,
-				sizeof (src),
+				(LPVOID)&buf,
+				sizeof (buf),
 				&rv);
-	      if (src)
+	      if (buf)
 		{
 		  ReadProcessMemory (hProcess,
-				    (void *)src,
+				    buf,
 				    (LPVOID)dll_name,
 				    sizeof (dll_name),
 				    &rv);
@@ -617,8 +625,7 @@ run_program (char *cmdline)
 	    }
 
 
-	  dll_info[num_dlls].base_address
-	    = (unsigned int)event.u.LoadDll.lpBaseOfDll;
+	  dll_info[num_dlls].base_address = event.u.LoadDll.lpBaseOfDll;
 	  dll_info[num_dlls].pcount = 0;
 	  dll_info[num_dlls].scount = 0;
 	  dll_info[num_dlls].name = wide_strdup (dll_ptr);
@@ -636,9 +643,9 @@ run_program (char *cmdline)
 
 	case EXIT_PROCESS_DEBUG_EVENT:
 	  if (verbose)
-	    printf ("process %08lx %08lx exit %ld\n",
-		   event.dwProcessId, event.dwThreadId,
-		   event.u.ExitProcess.dwExitCode);
+	    printf ("process %08x %08x exit %d\n",
+		    (int)event.dwProcessId, (int)event.dwThreadId,
+		    (int)event.u.ExitProcess.dwExitCode);
 
 	  running = 0;
 	  break;
@@ -892,8 +899,8 @@ main (int argc, char **argv)
 
   if ( (argc - optind) < 3 )
     usage (stderr);
-  sscanf (argv[optind++], "%i", &low_pc);
-  sscanf (argv[optind++], "%i", &high_pc);
+  sscanf (argv[optind++], "%lli", &low_pc);
+  sscanf (argv[optind++], "%lli", &high_pc);
 
   if (low_pc > high_pc-8)
     {
@@ -904,7 +911,7 @@ main (int argc, char **argv)
   hits = (HISTCOUNTER *)malloc (high_pc-low_pc+4);
   memset (hits, 0, high_pc-low_pc+4);
 
-  fprintf (stderr, "prun: [%08x,%08x] Running '%s'\n",
+  fprintf (stderr, "prun: [" CONTEXT_REG_FMT "," CONTEXT_REG_FMT "] Running '%s'\n",
 	  low_pc, high_pc, argv[optind]);
 
   run_program (argv[optind]);
@@ -923,8 +930,13 @@ main (int argc, char **argv)
 
   if (dll_counts)
     {
-      /*      1234567 123% 1234567 123% 12345678 xxxxxxxxxxx */
+#ifdef __x86_64__
+      /*       1234567 123% 1234567 123% 1234567812345678 xxxxxxxxxxx */
+      printf (" Main-Thread Other-Thread BaseAddr         DLL Name\n");
+#else
+      /*       1234567 123% 1234567 123% 12345678 xxxxxxxxxxx */
       printf (" Main-Thread Other-Thread BaseAddr DLL Name\n");
+#endif
 
       total_pcount = 0;
       total_scount = 0;
@@ -940,7 +952,7 @@ main (int argc, char **argv)
       for (i=0; i<num_dlls; i++)
 	if (dll_info[i].pcount || dll_info[i].scount)
 	  {
-	    printf ("%7d %3d%% %7d %3d%% %08x %s\n",
+	    printf ("%7d %3d%% %7d %3d%% %p %s\n",
 		   dll_info[i].pcount,
 		   (dll_info[i].pcount*100)/opcode_count,
 		   dll_info[i].scount,
@@ -952,5 +964,3 @@ main (int argc, char **argv)
 
   exit (0);
 }
-
-#endif /* !__x86_64 */

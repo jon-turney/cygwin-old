@@ -435,7 +435,8 @@ CLEANFILES = $(CRT0) \
 	sigset.texi stmp-sigset extra.texi stmp-extra \
 	stdio64.texi stmp-stdio64 targetdep.tex stmp-targetdep \
 	tmp-sigset.texi tmp-iconvset.texi tmp-extra.texi \
-	tmp-stdio64.texi tmp-posix.texi tmp-targetdep.texi
+	tmp-stdio64.texi tmp-posix.texi tmp-targetdep.texi \
+	*.xml libc.hml libc.pdf *.3
 
 ACLOCAL_AMFLAGS = -I .. -I ../..
 CONFIG_STATUS_DEPENDENCIES = $(newlib_basedir)/configure.host
@@ -858,7 +859,7 @@ info: info-recursive
 
 info-am: $(INFO_DEPS)
 
-install-data-am:
+install-data-am: install-data-local
 
 install-dvi: install-dvi-recursive
 
@@ -1010,11 +1011,11 @@ uninstall-am: uninstall-dvi-am uninstall-html-am uninstall-info-am \
 	distclean distclean-compile distclean-generic \
 	distclean-libtool distclean-tags dvi dvi-am html html-am info \
 	info-am install install-am install-data install-data-am \
-	install-dvi install-dvi-am install-exec install-exec-am \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs installdirs-am maintainer-clean \
+	install-data-local install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs installdirs-am maintainer-clean \
 	maintainer-clean-aminfo maintainer-clean-generic mostlyclean \
 	mostlyclean-aminfo mostlyclean-compile mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-recursive \
@@ -1117,6 +1118,23 @@ stmp-targetdep: force
 targetdep.tex: stmp-targetdep ; @true
 
 $(SUBDEFS): stmp-targetdep ; @true
+
+docbook: $(SUBDEFS) libc.in.xml
+	xsltproc --xinclude --path ${builddir} --nonet ${srcdir}/../refcontainers.xslt ${srcdir}/libc.in.xml >libc.xml
+	-xmllint --postvalid --noent --nonet --noout libc.xml
+	xmlto --skip-validation html-nochunks --stringparam funcsynopsis.style=ansi libc.xml
+	xmlto --skip-validation pdf --with-dblatex --stringparam funcsynopsis.style=ansi libc.xml
+	xmlto --skip-validation man -m ${srcdir}/../man.xsl libc.xml
+
+doc: docbook
+
+install-data-local:
+	mkdir -p $(DESTDIR)$(htmldir)
+	$(INSTALL_DATA) libc.html $(DESTDIR)$(htmldir)/
+	mkdir -p $(DESTDIR)$(docdir)
+	$(INSTALL_DATA) libc.pdf $(DESTDIR)$(docdir)/
+	mkdir -p $(DESTDIR)$(mandir)/man3
+	$(INSTALL_DATA) *.3 $(DESTDIR)$(mandir)/man3
 
 .PHONY: force
 force:

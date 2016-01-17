@@ -1116,6 +1116,15 @@ dvi-recursive: doc/makedoc
 doc/makedoc:
 	cd doc && $(MAKE) all
 
+doc: doc/makedoc
+	for d in $(SUBDIRS); do \
+	  if test "$$d" != "."; then \
+	    (cd $$d && $(MAKE) doc) || exit 1; \
+	  fi; \
+	done
+
+.PHONY: doc
+
 # Multilib support.
 .PHONY: all-multi check-multi mostlyclean-multi clean-multi distclean-multi \
 	maintainer-clean-multi

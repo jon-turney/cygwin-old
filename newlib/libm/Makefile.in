@@ -309,7 +309,7 @@ libm_la_LDFLAGS = -Xcompiler -nostdlib
 @USE_LIBTOOL_FALSE@noinst_LIBRARIES = libm.a
 info_TEXINFOS = libm.texinfo
 libm_TEXINFOS = targetdep.tex
-CLEANFILES = tmp.texi targetdep.tex stmp-targetdep
+CLEANFILES = tmp.texi targetdep.tex stmp-targetdep *.xml libm.hml libm.pdf *.3
 ACLOCAL_AMFLAGS = -I .. -I ../..
 CONFIG_STATUS_DEPENDENCIES = $(newlib_basedir)/configure.host
 all: all-recursive
@@ -731,7 +731,7 @@ info: info-recursive
 
 info-am: $(INFO_DEPS)
 
-install-data-am:
+install-data-am: install-data-local
 
 install-dvi: install-dvi-recursive
 
@@ -883,11 +883,11 @@ uninstall-am: uninstall-dvi-am uninstall-html-am uninstall-info-am \
 	distclean distclean-compile distclean-generic \
 	distclean-libtool distclean-tags dvi dvi-am html html-am info \
 	info-am install install-am install-data install-data-am \
-	install-dvi install-dvi-am install-exec install-exec-am \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs installdirs-am maintainer-clean \
+	install-data-local install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs installdirs-am maintainer-clean \
 	maintainer-clean-aminfo maintainer-clean-generic mostlyclean \
 	mostlyclean-aminfo mostlyclean-compile mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-recursive \
@@ -926,6 +926,23 @@ targetdep.tex: stmp-targetdep ; @true
 math/stmp-def: stmp-targetdep ; @true
 
 complex/stmp-def: stmp-targetdep ; @true
+
+docbook: math/stmp-def complex/stmp-def libm.in.xml
+	xsltproc --xinclude --path ${builddir} --nonet ${srcdir}/../refcontainers.xslt ${srcdir}/libm.in.xml >libm.xml
+	-xmllint --xinclude -path ${builddir} --postvalid --noent --nonet --noout libm.xml
+	xmlto --skip-validation --searchpath ${builddir} html-nochunks --stringparam funcsynopsis.style=ansi libm.xml
+	xmlto --skip-validation --searchpath ${builddir} pdf --with-dblatex --stringparam funcsynopsis.style=ansi libm.xml
+	xmlto --skip-validation --searchpath ${builddir} man -m ${srcdir}/../man.xsl libm.xml
+
+doc: docbook
+
+install-data-local:
+	mkdir -p $(DESTDIR)$(htmldir)
+	$(INSTALL_DATA) libm.html $(DESTDIR)$(htmldir)/
+	mkdir -p $(DESTDIR)$(docdir)
+	$(INSTALL_DATA) libm.pdf $(DESTDIR)$(docdir)/
+	mkdir -p $(DESTDIR)$(mandir)/man3
+	$(INSTALL_DATA) *.3 $(DESTDIR)$(mandir)/man3/
 
 .PHONY: force
 force:
